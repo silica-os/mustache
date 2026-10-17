@@ -213,10 +213,12 @@ void main() {
     final preview = tester.widget<SilicaIcon>(
       find.descendant(
         of: find.byKey(const ValueKey('folder preview')),
-        matching: find.byType(SilicaIcon),
+        matching: find.byWidgetPredicate(
+          (w) => w is SilicaIcon && w.source is ServiceSource,
+        ),
       ),
     );
-    expect((preview.source as FolderSource).folder.tint, isNotNull);
+    expect('${(preview.source as ServiceSource).revision}', startsWith('red|'));
     // The check, the divider and the other discs sliding ~8 pt right (~280 ms).
     expect(find.text('✓'), findsOneWidget);
     expect(find.byKey(const ValueKey('folder tag divider')), findsOneWidget);
@@ -632,14 +634,20 @@ void main() {
       await tester.pump();
     }
 
-    FolderIcon? drawnFolder(WidgetTester tester) {
+    ({String? tint, String? symbol})? drawnFolder(WidgetTester tester) {
       for (final icon in tester.widgetList<SilicaIcon>(
         find.descendant(
           of: find.byType(ListView),
-          matching: find.byType(SilicaIcon),
+          matching: find.byWidgetPredicate(
+            (w) => w is SilicaIcon && w.source is ServiceSource,
+          ),
         ),
       )) {
-        if (icon.source case FolderSource(:final folder)) return folder;
+        if (icon.source case ServiceSource(:final revision)) {
+          final parts = '$revision'.split('|');
+          String? part(int i) => parts[i] == 'null' ? null : parts[i];
+          return (tint: part(0), symbol: part(1));
+        }
       }
       return null;
     }
@@ -679,7 +687,7 @@ void main() {
       }
       expect(readTags(folder.path), ['Orange']);
       expect(folderStyles.look(folder.path).tint, 'orange');
-      expect(drawnFolder(tester)?.tint, const Color(0xFFFF8A00));
+      expect(drawnFolder(tester)?.tint, 'orange');
       writeTags(folder.path, []);
       folderStyles.invalidate([folder.path]);
     });
@@ -705,7 +713,9 @@ void main() {
         find
             .descendant(
               of: find.byType(ListView),
-              matching: find.byType(SilicaIcon),
+              matching: find.byWidgetPredicate(
+                (w) => w is SilicaIcon && w.source is ServiceSource,
+              ),
             )
             .first,
       );

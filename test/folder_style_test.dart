@@ -1,14 +1,10 @@
-import 'dart:ui' show Color;
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mustache/src/external.dart';
-import 'package:mustache/src/folder_icons.dart';
 import 'package:mustache/src/folder_style.dart';
 import 'package:mustache/src/xattr.dart';
-
-import 'folder_fixture.dart';
 
 /// The GIO metadata store, in memory.
 class FakeMetadata implements FolderMetadata {
@@ -248,48 +244,6 @@ void main() {
       expect(styles.look(path), (symbol: 'star', tint: '#e8336d', emoji: null));
     },
   );
-
-  test('the icon gets the symbol and the tint, full or empty', () {
-    final root = folderIconsRoot();
-    addTearDown(() => root.deleteSync(recursive: true));
-    final home = Directory.systemTemp.createTempSync('folder-home');
-    addTearDown(() => home.deleteSync(recursive: true));
-    final env = {'SILICA_ICONS_DIR': root.path, 'HOME': home.path};
-    final disk = FakeDisk();
-    final styles = disk.styles(FakeMetadata());
-    final plain = Directory('${home.path}/Plain')..createSync();
-    expect(
-      styledFolderIcon(plain.path, env: env, styles: styles)!.icon.id,
-      'folder-generic',
-    );
-
-    disk.tags[plain.path] = ['Blue'];
-    styles.save(plain.path, const FolderStyle(symbol: 'star'));
-    final folder = styledFolderIcon(plain.path, env: env, styles: styles)!;
-    expect(folder.icon.id, 'folder-generic');
-    expect(folder.symbol, 'star');
-    expect(folder.tint, const Color(0xFF2F7CF6));
-    final full = fullFolder(folder);
-    expect(full.symbol, 'star');
-    expect(full.tint, folder.tint);
-    expect(full.icon.layers.single.path, endsWith('/icon-full.svg'));
-
-    // A symbol silica-icons does not have keeps the special folder's own.
-    final music = Directory('${home.path}/Music')..createSync();
-    final env2 = {...env, 'XDG_CONFIG_HOME': '${home.path}/.config'};
-    File('${home.path}/.config/user-dirs.dirs')
-      ..createSync(recursive: true)
-      ..writeAsStringSync('XDG_MUSIC_DIR="\$HOME/Music"\n');
-    styles.save(music.path, const FolderStyle(symbol: 'no-such-symbol'));
-    expect(
-      styledFolderIcon(music.path, env: env2, styles: styles)!.symbol,
-      'music-note',
-    );
-    styles.save(music.path, const FolderStyle(symbol: 'house', tint: 'red'));
-    final custom = styledFolderIcon(music.path, env: env2, styles: styles)!;
-    expect(custom.symbol, 'house');
-    expect(custom.tint, const Color(0xFFF2382E));
-  });
 
   test('invalidating redraws only for folders already shown', () {
     final styles = FakeDisk().styles(FakeMetadata());

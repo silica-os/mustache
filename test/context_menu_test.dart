@@ -111,13 +111,14 @@ void main() {
     // Silica's own app has its 16 pt icon; the other apps keep the slot, empty (labels line up).
     expect(find.byType(AmalfiAppIcon), findsNWidgets(2));
     // Its canvas is 16 pt, centred in the menu's icon slot: the body is 824/1024 of it.
-    expect(find.byType(SilicaIcon), findsOneWidget);
-    expect(
-      tester.getSize(find.byType(SilicaIcon)).width,
-      closeTo(12.875, 0.01),
+    final menuIcon = find.descendant(
+      of: find.byType(AmalfiMenu).last,
+      matching: find.byType(SilicaIcon),
     );
+    expect(menuIcon, findsOneWidget);
+    expect(tester.getSize(menuIcon).width, closeTo(12.875, 0.01));
     expect(
-      tester.getCenter(find.byType(SilicaIcon)),
+      tester.getCenter(menuIcon),
       tester.getCenter(find.byType(AmalfiAppIcon).first),
     );
     expect(

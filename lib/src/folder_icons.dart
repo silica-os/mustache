@@ -1,9 +1,7 @@
-// Full folders: a folder with at least one visible item is drawn with the `full` variant of
-// its silica-icons icon (a sheet between the back and front panels). The folder's symbol and
-// tint stay dynamic on top. The variant is picked here with the public silica_ui types, so it
-// works before silica_ui itself offers a `full` flag.
+// Folder icons: the system composes them (`Thumbnails1.Icon` of the daemon: colour, symbol, the
+// sheet of a folder with items). This file knows when a folder's icon must be asked again and
+// draws the emoji of FOLDER-CUSTOM on top.
 
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -41,78 +39,17 @@ bool folderHasItems(String path) {
   }
 }
 
-/// The `full` variants already read, per manifest folder (null: the icon has none).
-final Map<String, LayeredIcon?> _fullIcons = {};
-
-final RegExp _svgName = RegExp(r'^[A-Za-z0-9][A-Za-z0-9._-]{0,63}\.svg$');
-
-/// [icon] with the artwork of its `full` variant (`variants` of its `icon.json`; folders have
-/// no dark artwork); [icon] itself if it has none. Id, kind and dynamic content are kept.
-LayeredIcon fullFolderVariant(LayeredIcon icon) {
-  if (icon.layers.length != 1) return icon;
-  final path = icon.layers.first.path;
-  final slash = path.lastIndexOf('/');
-  if (slash < 0) return icon;
-  final dir = path.substring(0, slash);
-  final key = '$dir\u0000${icon.id}';
-  if (_fullIcons.containsKey(key)) return _fullIcons[key] ?? icon;
-  LayeredIcon? full;
-  try {
-    final json = jsonDecode(File('$dir/icon.json').readAsStringSync());
-    final variants = json is Map ? json['variants'] : null;
-    String? artwork(String name) {
-      final variant = variants is Map ? variants[name] : null;
-      final file = variant is Map ? variant['artwork'] : null;
-      if (file is! String || !_svgName.hasMatch(file)) return null;
-      return File('$dir/$file').existsSync() ? '$dir/$file' : null;
-    }
-
-    final light = artwork('full');
-    if (light != null) {
-      full = LayeredIcon(
-        id: icon.id,
-        kind: icon.kind,
-        layers: [IconLayer(light, shadow: icon.layers.first.shadow)],
-        dynamic: icon.dynamic,
-      );
-    }
-  } on FileSystemException {
-    full = null;
-  } on FormatException {
-    full = null;
-  }
-  _fullIcons[key] = full;
-  return full ?? icon;
-}
-
-/// [folder] drawn full: same symbol and tint, the `full` artwork.
-FolderIcon fullFolder(FolderIcon folder) => FolderIcon(
-  fullFolderVariant(folder.icon),
-  symbol: folder.symbol,
-  tint: folder.tint,
-);
-
-/// The icon of the folder at [path] with its colour and symbol (folder_style.dart): a custom
-/// symbol replaces the special folder's; one silica-icons does not have keeps the special one.
-/// An emoji is not part of it: [FolderEmoji] draws it on top.
-FolderIcon? styledFolderIcon(
-  String path, {
-  Map<String, String>? env,
-  FolderStyles? styles,
-}) {
+/// The icon of the folder at [path], drawn by the system. The revision changes with the folder's
+/// colour, symbol and emptiness, which the daemon reads from the folder itself (`user.silica.folder`
+/// and the colour tags), so the icon is asked again then. An emoji is not part of it:
+/// [FolderEmoji] draws it on top.
+ServiceSource folderSource(String path, {FolderStyles? styles}) {
   final look = (styles ?? folderStyles).look(path);
-  // An emoji replaces every symbol, the special folder's too (an unknown key has none).
-  final folder = resolveFolderIcon(
-    path,
-    symbol: look.symbol,
-    key: look.emoji == null ? null : '-',
-    tint: look.tint,
-    env: env,
+  return ServiceSource(
+    Uri.file(path),
+    isFolder: true,
+    revision: '${look.tint}|${look.symbol}|${folderHasItems(path)}',
   );
-  if (look.symbol != null && folder != null && folder.symbol == null) {
-    return resolveFolderIcon(path, tint: look.tint, env: env);
-  }
-  return folder;
 }
 
 /// Where the emoji sits on the folder canvas, and its size: the centre of the symbol box of the

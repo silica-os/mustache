@@ -692,19 +692,16 @@ class EntryIcon extends StatelessWidget {
   final double side;
   final Map<String, String>? env;
 
-  /// Type and badges per path and modification date: computed once, not on every paint (folders
-  /// with thousands of files, MU-24).
-  static final Map<String, (FileIcon?, Set<IconBadge>)> _cache = {};
+  /// Badges per path and modification date: computed once, not on every paint (folders with
+  /// thousands of files, MU-24).
+  static final Map<String, Set<IconBadge>> _cache = {};
 
-  (FileIcon?, Set<IconBadge>) _resolve() {
+  Set<IconBadge> _resolve() {
     final key = '${entry.path}\u0000${entry.modified.microsecondsSinceEpoch}';
     final hit = _cache[key];
     if (hit != null) return hit;
     if (_cache.length > 20000) _cache.clear();
-    return _cache[key] = (
-      entry.isDirectory ? null : resolveFileIcon(entry.path, env: env),
-      badgesOf(entry.path),
-    );
+    return _cache[key] = badgesOf(entry.path);
   }
 
   @override
@@ -718,40 +715,32 @@ class EntryIcon extends StatelessWidget {
   }
 
   Widget _icon(double side) {
-    final (file, badges) = _resolve();
+    final badges = _resolve();
     if (entry.isDirectory) {
       // Colour and symbol live on the folder: redrawn when they change (folder_style.dart).
       return ListenableBuilder(
         listenable: folderStyles,
-        builder: (context, _) {
-          final folder = styledFolderIcon(entry.path, env: env);
-          if (folder == null) {
-            return FolderIconAnchor(
-              path: entry.path,
-              child: SizedBox(width: side, height: side),
-            );
-          }
-          // A folder with a visible item inside is drawn full; symbol and tint stay on top.
-          return FolderIconAnchor(
-            path: entry.path,
-            child: FolderEmoji(
-              emoji: folderStyles.look(entry.path).emoji,
+        builder: (context, _) => FolderIconAnchor(
+          path: entry.path,
+          child: FolderEmoji(
+            emoji: folderStyles.look(entry.path).emoji,
+            side: side,
+            child: SilicaIcon(
+              folderSource(entry.path),
               side: side,
-              child: SilicaIcon(
-                FolderSource(
-                  folderHasItems(entry.path) ? fullFolder(folder) : folder,
-                ),
-                side: side,
-                badges: badges,
-                env: env,
-              ),
+              badges: badges,
+              env: env,
             ),
-          );
-        },
+          ),
+        ),
       );
     }
-    if (file == null) return SizedBox(width: side, height: side);
-    return SilicaIcon(FileSource(file), side: side, badges: badges, env: env);
+    return SilicaIcon(
+      ServiceSource(Uri.file(entry.path)),
+      side: side,
+      badges: badges,
+      env: env,
+    );
   }
 }
 
@@ -794,10 +783,7 @@ class _Thumbnail extends StatelessWidget {
                   ),
                 ),
           errorBuilder: (context, error, stack) {
-            final file = resolveFileIcon(path);
-            return file == null
-                ? const SizedBox.shrink()
-                : SilicaIcon(FileSource(file), side: side);
+            return SilicaIcon(ServiceSource(Uri.file(path)), side: side);
           },
         ),
       ),

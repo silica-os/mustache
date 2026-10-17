@@ -166,8 +166,7 @@ List<SymbolCategory> folderSymbolCategories({Map<String, String>? env}) {
 
 /// `symbols/` of the silica-icons folder icon, or null.
 String? folderSymbolsDir({Map<String, String>? env}) {
-  final dyn = findSilicaIcon('folder-generic', env: env)?.dynamic;
-  return dyn is FolderSymbol ? dyn.symbolsDir : null;
+  return silicaSymbolsDir(env: env);
 }
 
 /// The folder icons on screen by path, so the popover can point at the one it edits.
@@ -827,20 +826,12 @@ class _FolderCustomizeOverlayState extends State<FolderCustomizeOverlay> {
   Widget _preview() => ListenableBuilder(
     listenable: _styles,
     builder: (context, _) {
-      final folder = styledFolderIcon(
-        widget.path,
-        env: widget.env,
-        styles: _styles,
-      );
-      if (folder == null) return const SizedBox.shrink();
       return FolderEmoji(
         key: const ValueKey('folder preview'),
         emoji: _styles.look(widget.path).emoji,
         side: folderPreviewSide,
         child: SilicaIcon(
-          FolderSource(
-            folderHasItems(widget.path) ? fullFolder(folder) : folder,
-          ),
+          folderSource(widget.path, styles: _styles),
           side: folderPreviewSide,
           env: widget.env,
         ),

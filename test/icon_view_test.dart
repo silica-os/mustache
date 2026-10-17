@@ -226,6 +226,5 @@ void main() {
     expect(hasThumbnail('foto.JPG'), isTrue);
     expect(hasThumbnail('nota.txt'), isFalse);
     expect(hasThumbnail('.png'), isFalse);
-    expect(fileIconId('nota.txt'), 'file-text');
   });
 }

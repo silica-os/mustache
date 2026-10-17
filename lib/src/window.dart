@@ -1492,10 +1492,11 @@ class _MustacheWindowState extends State<MustacheWindow>
       for (var i = 0; i < places.length; i++)
         AmalfiMenuAction(
           displayName(places[i]),
-          icon: switch (styledFolderIcon(places[i], env: widget.iconsEnv)) {
-            final folder? => SilicaIcon(FolderSource(folder), side: 16),
-            null => const SizedBox(width: 16, height: 16),
-          },
+          icon: SilicaIcon(
+            folderSource(places[i]),
+            side: 16,
+            env: widget.iconsEnv,
+          ),
           onSelected: () {
             if (_history.jump(back ? -(i + 1) : i + 1)) _load();
           },

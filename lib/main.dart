@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:silica_ui/silica_ui.dart';
 
+import 'src/app_info.dart';
 import 'src/desktop.dart';
 import 'src/dialog.dart';
 import 'src/icon_arrange.dart';
@@ -47,6 +48,8 @@ void main(List<String> args) {
   final settings = Settings.forUser(env)..watch();
   final iconPositions = IconPositions.forUser(env);
   WidgetsFlutterBinding.ensureInitialized();
+  // About Mustache and the standard app menu (silica-ui#99).
+  SilicaApp.info = appInfo;
   // The desktop (silica-desktop#147): Ossido starts this mode on the bottom layer and keeps it
   // running; it has no window, so none of the window setup below.
   if (args.contains('--desktop')) {

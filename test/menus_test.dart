@@ -17,7 +17,7 @@ import 'package:mustache/src/settings.dart';
 import 'package:mustache/src/tabs.dart';
 import 'package:mustache/src/transfer.dart' show FileClipboard;
 import 'package:mustache/src/window.dart';
-import 'package:silica_ui/silica_ui.dart' show SilicaMenuDelegate;
+import 'package:silica_ui/silica_ui.dart' show SilicaApp, SilicaMenuDelegate;
 
 void main() {
   late Directory root;
@@ -140,6 +140,9 @@ void main() {
   }
 
   testWidgets('the menus in order; the app menu has no Quit', (tester) async {
+    // As main() sets it for the file manager (DOCK-02).
+    SilicaApp.quitEnabled = false;
+    addTearDown(() => SilicaApp.quitEnabled = true);
     await start(tester, window());
     expect(menus().map((m) => m['label']), [
       'Mustache',
@@ -148,7 +151,8 @@ void main() {
       'View',
       'Go',
       'Window',
-      'Help',
+      // The standard Help menu (silica-ui#99): the bar gives its title.
+      '',
     ]);
     expect(menus().map((m) => m['role']), [
       'app',
@@ -169,9 +173,10 @@ void main() {
       'hide_others',
       'show_all',
     ]);
-    // Nothing to run yet behind About: disabled; Settings and Empty Trash work.
+    // About opens the standard About panel (silica-ui#99); Settings and Empty Trash work.
     expect(item('Mustache', 'Empty Trash…')['enabled'], isTrue);
-    expect(items('Mustache').first['enabled'], isFalse);
+    expect(items('Mustache').first['enabled'], isTrue);
+    expect(items('Mustache').first['id'], isA<int>());
     expect(item('Mustache', 'Empty Trash…')['shortcut'], {
       'key': 'Backspace',
       'meta': true,

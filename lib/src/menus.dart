@@ -215,38 +215,25 @@ List<PlatformMenuItem> buildMenus(MenuSpec s) => [
   _viewMenu(s),
   _goMenu(s),
   _windowMenu(s),
-  SilicaMenus.help(l10n.menuHelp),
+  // Help is silica_ui's standard menu (silica-ui#99).
 ];
 
 /// The name of the app in the bar (not translated).
 const String appName = 'Mustache';
 
-SilicaMenu _appMenu(MenuSpec s) => SilicaMenu(
-  label: appName,
-  role: SilicaMenuRole.app,
-  menus: [
-    // About has no window yet: the bar shows it disabled.
-    _group([
-      const SilicaMenuItem(role: SilicaMenuItemRole.about),
-      SilicaMenuItem(
-        role: SilicaMenuItemRole.settings,
-        shortcut: _cmd(LogicalKeyboardKey.comma),
-        onSelected: s.settings,
-        enabled: s.settings != null,
-      ),
-    ]),
+/// silica_ui's standard app menu (silica-ui#99): About Mustache (the standard About panel),
+/// Settings… while there is a settings window to open, Empty Trash…, the system items; no Quit,
+/// as Mustache has none (`SilicaApp.quitEnabled`).
+SilicaMenu _appMenu(MenuSpec s) => SilicaMenus.app(
+  appName,
+  onSettings: s.settings,
+  items: [
     _group([
       _item(
         l10n.menuEmptyTrash,
         s.emptyTrash,
         key: _cmd(LogicalKeyboardKey.backspace, shift: true),
       ),
-    ]),
-    _group([const SilicaMenuItem.system(SilicaMenuItemRole.services)]),
-    _group([
-      const SilicaMenuItem.system(SilicaMenuItemRole.hide),
-      const SilicaMenuItem.system(SilicaMenuItemRole.hideOthers),
-      const SilicaMenuItem.system(SilicaMenuItemRole.showAll),
     ]),
   ],
 );

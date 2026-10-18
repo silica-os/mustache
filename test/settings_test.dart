@@ -256,34 +256,39 @@ void main() {
   }
 
   group('the Settings window', () {
-    testWidgets('the toolbar: four panes, 56 x 44 at y 4, 8 apart, centred', (
+    testWidgets('the panes: Icon + Label control, 4 of 80, under the title bar', (
       tester,
     ) async {
       await pumpView(tester);
-      final rects = [
-        for (final p in SettingsPane.values)
-          tester.getRect(find.byKey(ValueKey('settings pane ${p.name}'))),
-      ];
-      expect(rects[0].top, 4);
-      expect(rects[0].size, const Size(56, 44));
-      expect(rects[0].left, 176);
-      expect(rects[1].left, 240);
-      expect(rects[2].left, 304);
-      expect(rects[3].left, 368);
+      // 4 panes of 80 + 8 = 328 wide, centred in 600, top at 52 (under the title bar).
+      expect(
+        tester.getRect(find.byKey(const ValueKey('settings tabs'))),
+        const Rect.fromLTWH(136, 52, 328, 52),
+      );
+      for (final t in ['General', 'Tags', 'Sidebar', 'Advanced']) {
+        expect(find.text(t), findsOneWidget, reason: t);
+      }
+      // Choosing a pane shows it; the content starts 52 lower than with toolbar buttons.
+      await tester.tap(find.text('Advanced'));
+      await tester.pump();
+      expect(
+        find.byKey(const ValueKey('setting trash cleanup')),
+        findsOneWidget,
+      );
     });
 
     testWidgets('General: the pane is as tall as its rows', (tester) async {
       final heights = <double>[];
       await pumpView(tester, heights: heights);
       // 52 + 24 + heading 16 + 4 + rows 40 + 36 + 24.
-      expect(heights.last, 52 + 24 + 20 + 76 + 24);
+      expect(heights.last, 52 + 52 + 24 + 20 + 76 + 24);
       // Kit: a pop-up row at x 24, 552 wide; the pop-up 108 wide.
       final row = tester.getRect(
         find.byKey(const ValueKey('setting new window folder')),
       );
       expect(row.left, 24);
       expect(row.width, 552);
-      expect(row.top, 96);
+      expect(row.top, 148);
     });
 
     testWidgets('General: the choices are written', (tester) async {
@@ -304,7 +309,7 @@ void main() {
         heights: heights,
       );
       // Kit Tags: 500 tall with the hidden-free rows (7 × 32, 64, 40).
-      expect(heights.last, 500);
+      expect(heights.last, 552);
       final red = tester.getRect(find.byKey(const ValueKey('setting tag red')));
       final orange = tester.getRect(
         find.byKey(const ValueKey('setting tag orange')),

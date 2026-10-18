@@ -1,6 +1,6 @@
 // The Settings window (kit `Apps/Mustache/Settings General|Tags|Sidebar|Advanced`): 600 wide, a
-// toolbar of four pane buttons (icon and label, 56 × 44 at y 4, the chosen one on a soft accent
-// capsule) and grouped rows (24 pt from the sides, 12 pt radius cards, 36 pt rows). The window
+// title bar with the window controls, the Segmented Control, Icon + Label under it (four panes
+// of 80, 52 tall) and grouped rows (24 pt from the sides, 12 pt radius cards, 36 pt rows). The window
 // is as tall as the pane. Every row changes a setting Mustache follows at once (the windows
 // watch settings.json); what Mustache cannot do yet (the desktop's volumes, filename
 // extensions, suggested names, the sidebar's disks) is not drawn.
@@ -15,6 +15,16 @@ import 'tags.dart';
 
 const double settingsWidth = 600;
 const double _toolbar = AmalfiToolbarMetrics.toolbarHeight;
+
+/// The Segmented Control, Icon + Label under the title bar.
+const double _bar = AmalfiIconLabelMetrics.barHeight;
+
+const List<(SettingsPane, String)> _panes = [
+  (SettingsPane.general, 'gear'),
+  (SettingsPane.tags, 'tag'),
+  (SettingsPane.sidebar, 'sidebar'),
+  (SettingsPane.advanced, 'sliders'),
+];
 
 enum SettingsPane { general, tags, sidebar, advanced }
 
@@ -83,7 +93,7 @@ class _SettingsViewState extends State<SettingsView> {
     if (!mounted) return;
     final box = _content.currentContext?.findRenderObject();
     if (box is RenderBox && box.hasSize) {
-      final height = _toolbar + box.size.height;
+      final height = _toolbar + _bar + box.size.height;
       if (height != _reported) {
         _reported = height;
         widget.onHeight?.call(height);
@@ -116,40 +126,29 @@ class _SettingsViewState extends State<SettingsView> {
       color: colors.surfaceWindow,
       child: Stack(
         children: [
+          // The title bar keeps the window controls; the panes switch with the Segmented
+          // Control, Icon + Label (4 panes of 80) under it.
           Positioned(
             left: 0,
             right: 0,
-            top: 0,
-            height: _toolbar,
+            top: _toolbar,
+            height: _bar,
             child: Center(
-              child: Padding(
-                padding: const EdgeInsets.only(top: 0),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  spacing: 8,
-                  children: [
-                    for (final (pane, icon) in [
-                      (SettingsPane.general, 'gear'),
-                      (SettingsPane.tags, 'tag'),
-                      (SettingsPane.sidebar, 'sidebar'),
-                      (SettingsPane.advanced, 'sliders'),
-                    ])
-                      _PaneButton(
-                        key: ValueKey('settings pane ${pane.name}'),
-                        label: _title(pane),
-                        icon: icon,
-                        selected: pane == _pane,
-                        onPressed: () => _choose(pane),
-                      ),
-                  ],
-                ),
+              child: AmalfiIconLabelSegmentedControl(
+                key: const ValueKey('settings tabs'),
+                tabs: [
+                  for (final (pane, icon) in _panes)
+                    AmalfiIconLabelSegment(label: _title(pane), symbol: icon),
+                ],
+                selected: _pane.index,
+                onChanged: (i) => _choose(SettingsPane.values[i]),
               ),
             ),
           ),
           Positioned(
             left: 0,
             right: 0,
-            top: _toolbar,
+            top: _toolbar + _bar,
             child: SingleChildScrollView(
               child: KeyedSubtree(
                 key: _content,
@@ -170,50 +169,6 @@ class _SettingsViewState extends State<SettingsView> {
                 ),
               ),
             ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _PaneButton extends StatelessWidget {
-  const _PaneButton({
-    super.key,
-    required this.label,
-    required this.icon,
-    required this.selected,
-    required this.onPressed,
-  });
-
-  final String label;
-  final String icon;
-  final bool selected;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = AmalfiTheme.of(context).colors;
-    return SizedBox(
-      width: AmalfiToolbarButtonMetrics.labeled.width,
-      height: AmalfiToolbarButtonMetrics.labeled.height,
-      child: Stack(
-        children: [
-          if (selected)
-            Positioned.fill(
-              child: IgnorePointer(
-                child: DecoratedBox(
-                  decoration: ShapeDecoration(
-                    color: colors.accentAmalfiSoft,
-                    shape: AmalfiSmoothBorder(radius: 12),
-                  ),
-                ),
-              ),
-            ),
-          AmalfiToolbarButton(
-            icon: AmalfiSymbol(icon),
-            label: label,
-            onPressed: onPressed,
           ),
         ],
       ),

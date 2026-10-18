@@ -200,7 +200,7 @@ void main() {
       }
       expect(find.byKey(const ValueKey('settings sheet')), findsOneWidget);
       expect(find.text('Windows and names'), findsOneWidget);
-      await tester.tap(find.byKey(const ValueKey('settings pane advanced')));
+      await tester.tap(find.text('Advanced'));
       await tester.pump();
       expect(find.text('Keep folders on top'), findsOneWidget);
       await tester.tapAt(const Offset(4, 300));

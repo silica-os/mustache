@@ -84,7 +84,7 @@ extension _SettingsEffects on _MustacheWindowState {
     );
     window = await SilicaWindows.openWindow(
       title: l10n.settingsGeneral,
-      size: const Size(settingsWidth, 412),
+      size: const Size(settingsWidth, 464),
       toolbarHeight: AmalfiToolbarMetrics.toolbarHeight,
       builder: view,
     );
@@ -95,7 +95,7 @@ extension _SettingsEffects on _MustacheWindowState {
         _sheet = SizedBox(
           key: const ValueKey('settings sheet'),
           width: settingsWidth,
-          height: 520,
+          height: 572,
           child: SettingsView(settings: s, places: widget.places),
         );
       });

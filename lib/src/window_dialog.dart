@@ -7,8 +7,18 @@ part of 'window.dart';
 /// The name row of the Save panel, below the toolbar.
 const double saveBarHeight = 52;
 
-/// The Cancel and accept row at the bottom.
-const double dialogButtonsHeight = 56;
+/// The footer with Cancel and the accept button (kit `Dialogs/Dialog/Open Panel` and
+/// `Dialogs/Footer/Open`): 12 pt below what is above it (here the divider), the 28 pt buttons
+/// 8 pt apart against the right, 20 pt from the sides and from the bottom of the panel.
+const double dialogFooterTop = 12;
+const double dialogFooterBottom = 20;
+const double dialogFooterSide = 20;
+const double dialogFooterGap = 8;
+const double dialogButtonHeight = 28;
+
+/// The Cancel and accept row at the bottom: the divider, then the footer.
+const double dialogButtonsHeight =
+    1 + dialogFooterTop + dialogButtonHeight + dialogFooterBottom;
 
 extension _Dialog on _MustacheWindowState {
   DialogOptions get _dialogOptions => widget.dialog!;
@@ -108,20 +118,24 @@ extension _Dialog on _MustacheWindowState {
     return SizedBox(
       key: const ValueKey('dialog buttons'),
       height: dialogButtonsHeight,
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Positioned(
-            left: 0,
-            right: 0,
-            top: 0,
+          SizedBox(
+            key: const ValueKey('dialog divider'),
             height: 1,
             child: ColoredBox(color: colors.lineSeparator),
           ),
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
+            padding: const EdgeInsets.fromLTRB(
+              dialogFooterSide,
+              dialogFooterTop,
+              dialogFooterSide,
+              dialogFooterBottom,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
-              spacing: 8,
+              spacing: dialogFooterGap,
               children: [
                 KeyedSubtree(
                   key: ValueKey('dialog ${l10n.cancel}'),

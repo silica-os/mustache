@@ -71,6 +71,35 @@ void main() {
       );
     }
 
+    testWidgets(
+      'the footer as the kit\'s Open panel: 12 pt under the divider, 20 pt from the sides and '
+      'the bottom (mustache#30)',
+      (tester) async {
+        await pump(tester, const DialogOptions(save: false, title: 'Open'));
+        final bar = tester.getRect(
+          find.byKey(const ValueKey('dialog buttons')),
+        );
+        final divider = tester.getRect(
+          find.byKey(const ValueKey('dialog divider')),
+        );
+        final cancel = tester.getRect(
+          find.byKey(const ValueKey('dialog Cancel')),
+        );
+        final open = tester.getRect(find.byKey(const ValueKey('dialog Open')));
+        // The bar is at the bottom of the window.
+        expect(bar.bottom, 700);
+        expect(divider.top, bar.top);
+        expect(divider.height, 1);
+        // The buttons: 12 below the divider, 20 above the bottom, 20 from the right, 8 apart.
+        expect(cancel.top - divider.bottom, dialogFooterTop);
+        expect(bar.bottom - cancel.bottom, dialogFooterBottom);
+        expect(cancel.height, dialogButtonHeight);
+        expect(open.top, cancel.top);
+        expect(bar.right - open.right, dialogFooterSide);
+        expect(open.left - cancel.right, dialogFooterGap);
+      },
+    );
+
     testWidgets('Open: double click on a file chooses it; Esc cancels', (
       tester,
     ) async {

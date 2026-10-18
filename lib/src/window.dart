@@ -39,6 +39,7 @@ import 'icon_arrange.dart';
 import 'icon_view.dart';
 import 'info.dart';
 import 'list_view.dart';
+import 'menu_icons.dart';
 import 'menu_scope.dart';
 import 'menus.dart';
 import 'operations.dart';
@@ -215,7 +216,8 @@ class MustacheWindow extends StatefulWidget {
     this.onDialogFinish,
     this.customize,
     this.launch = LaunchAction.none,
-  });
+    MenuIcons? menuIcons,
+  }) : _menuIcons = menuIcons;
 
   /// A folder whose Customize Folder popover opens at start (`--customize=<path>`,
   /// sent by the desktop's context menu; `start` is the folder that holds it).
@@ -223,6 +225,10 @@ class MustacheWindow extends StatefulWidget {
 
   /// What the window does once it is open (`--find`, `--go-to-folder`: the Dock menu's items).
   final LaunchAction launch;
+
+  /// The icons of the rows of the menus the shell draws (mustache#28); tests give their own.
+  MenuIcons get menuIcons => _menuIcons ?? MenuIcons.shared;
+  final MenuIcons? _menuIcons;
 
   /// The window is an Open or Save dialog for the portal (null: the normal window).
   final DialogOptions? dialog;
@@ -545,6 +551,11 @@ class _MustacheWindowState extends State<MustacheWindow>
     _saveFocus.addListener(_menusChanged);
     _startSettings();
     _load();
+    // The app icons of Open With, composed ahead for the shell's menus (mustache#28).
+    // (Not for an Open or Save panel: it opens fast and offers no Open With.)
+    if (widget.dialog == null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _prefetchMenuIcons());
+    }
   }
 
   @override
@@ -1531,6 +1542,12 @@ class _MustacheWindowState extends State<MustacheWindow>
             folderSource(places[i]),
             side: 16,
             env: widget.iconsEnv,
+          ),
+          // The shell draws the menu: the folder's icon as a PNG (mustache#28).
+          iconName: widget.menuIcons.folderIcon(
+            places[i],
+            scale: View.of(context).devicePixelRatio,
+            dark: AmalfiTheme.of(context).isDark,
           ),
           onSelected: () {
             if (_history.jump(back ? -(i + 1) : i + 1)) _load();

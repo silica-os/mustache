@@ -28,6 +28,7 @@ import 'emoji_data.dart';
 import 'folder_icons.dart';
 import 'folder_style.dart';
 import 'l10n.dart';
+import 'menu_icons.dart' show tagDotSymbol;
 import 'model.dart' show displayName;
 import 'tags.dart';
 import 'xattr.dart' as xattr show writeTags;
@@ -462,6 +463,7 @@ class _FolderCustomizeOverlayState extends State<FolderCustomizeOverlay> {
           AmalfiMenuAction(
             t,
             icon: const TagDot(color: null, side: 12),
+            iconName: tagDotSymbol,
             checked: true,
             onSelected: () => _setTags([
               for (final x in _tags)

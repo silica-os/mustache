@@ -161,6 +161,25 @@ extension _Context on _MustacheWindowState {
   Widget _appIcon(DesktopApp app) =>
       AmalfiAppIcon(app.silicaIcon ?? '', env: widget.iconsEnv);
 
+  /// The same icon for the shell's menus (a PNG path, mustache#28): null while it is composed.
+  String? _appIconName(DesktopApp app) => widget.menuIcons.appIcon(
+    app.silicaIcon,
+    scale: View.of(context).devicePixelRatio,
+    dark: AmalfiTheme.of(context).isDark,
+  );
+
+  /// Asks for the menu icons of every app ahead, so the menus have them when they open.
+  void _prefetchMenuIcons() {
+    if (!mounted) return;
+    unawaited(
+      widget.menuIcons.prefetchApps(
+        _registry.apps.values.map((app) => app.silicaIcon),
+        scale: View.of(context).devicePixelRatio,
+        dark: AmalfiTheme.of(context).isDark,
+      ),
+    );
+  }
+
   /// "Open With ›": the default on top with "(default)", then the others by name, then "Other…"
   /// (R10.1).
   AmalfiMenuAction _openWithMenu(List<Entry> files) {
@@ -179,6 +198,7 @@ extension _Context on _MustacheWindowState {
           AmalfiMenuAction(
             l10n.defaultApp(preferred.name),
             icon: _appIcon(preferred),
+            iconName: _appIconName(preferred),
             onSelected: () => _openWith(files, preferred),
           ),
         if (preferred != null && others.isNotEmpty) const AmalfiMenuDivider(),
@@ -186,6 +206,7 @@ extension _Context on _MustacheWindowState {
           AmalfiMenuAction(
             app.name,
             icon: _appIcon(app),
+            iconName: _appIconName(app),
             onSelected: () => _openWith(files, app),
           ),
         const AmalfiMenuDivider(),

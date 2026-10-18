@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mustache/src/list_view.dart';
+import 'package:mustache/src/menu_icons.dart';
 import 'package:mustache/src/model.dart';
 import 'package:mustache/src/settings.dart';
 import 'package:mustache/src/window.dart';
@@ -85,6 +86,60 @@ void main() {
     await tester.tapAt(at, buttons: kSecondaryMouseButton);
     await tester.pump();
   }
+
+  testWidgets(
+    'Open With rows carry the app icons by path for the shell\'s menus (mustache#28)',
+    (tester) async {
+      // As installed: X-Silica-Icon is the app's icon/ folder.
+      final iconDir = '${home.path}/apps/scrivi/icon';
+      File(
+        '${home.path}/.local/share/applications/scrivi.desktop',
+      ).writeAsStringSync(
+        '[Desktop Entry]\nType=Application\nName=Scrivi\nExec=scrivi %f\n'
+        'MimeType=text/plain;\nX-Silica-Icon=$iconDir\n',
+      );
+      final asked = <(String, int, bool)>[];
+      final icons = MenuIcons(
+        apps: (dir, px, dark) async {
+          asked.add((dir, px, dark));
+          return '/cache/apps/${dir.hashCode}-$px.png';
+        },
+      );
+      tester.view.physicalSize = const Size(2000, 1400);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MustacheWindow(
+            start: dir.path,
+            places: [Place('casa', home.path, PlaceKind.home)],
+            trash: Place(
+              'Trash',
+              '${home.path}/.local/share/Trash/files',
+              PlaceKind.trash,
+            ),
+            settings: Settings('${home.path}/.config/s.json')..view = 'list',
+            iconsEnv: env,
+            menuIcons: icons,
+          ),
+        ),
+      );
+      await tester.pump();
+      // Composed ahead, at the window's scale: 16 pt at 2x.
+      expect(asked, [(iconDir, 32, false)]);
+      await rightClick(tester, tester.getCenter(find.text('nota.txt')));
+      final menu = tester.widget<AmalfiMenu>(find.byType(AmalfiMenu).first);
+      final openWith = menu.entries.whereType<AmalfiMenuAction>().firstWhere(
+        (e) => e.label == 'Open With',
+      );
+      final rows = openWith.submenu!.whereType<AmalfiMenuAction>().toList();
+      expect(rows.first.label, 'Scrivi (default)');
+      expect(rows.first.iconName, '/cache/apps/${iconDir.hashCode}-32.png');
+      // An app with no icon of its own has none (its label still lines up in the shell).
+      expect(rows.firstWhere((r) => r.label == 'Appunti').iconName, isNull);
+    },
+  );
 
   testWidgets('file: Open With shows the default on top, then the others', (
     tester,

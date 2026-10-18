@@ -7,6 +7,7 @@
 // the process; until a path is known the row goes without, as an app without an icon does.
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:silica_ui/silica_ui.dart';
 
@@ -86,6 +87,55 @@ class MenuIcons {
       'folder $path $px $dark',
       () => _folders(path, px, scale, dark),
     );
+  }
+
+  final Map<String, String?> _themed = {};
+
+  /// The icon of an app that is not one of Silica's, from its desktop entry's `Icon`: an
+  /// absolute PNG, or the PNG of that name in the hicolor icon theme of the data directories
+  /// of [env] (the size nearest to a row at [scale] first) or in `pixmaps`. Null when there is
+  /// none the shell can draw (the row keeps an empty box).
+  String? themeIcon(
+    String? name, {
+    required double scale,
+    Map<String, String>? env,
+  }) {
+    if (name == null || name.isEmpty) return null;
+    final px = _px(scale);
+    final key = '$name $px';
+    if (_themed.containsKey(key)) return _themed[key];
+    String? found;
+    if (name.startsWith('/')) {
+      found = name.endsWith('.png') && File(name).existsSync() ? name : null;
+    } else if (!name.contains('/')) {
+      // From the size of the row up, then the smaller ones.
+      final sizes = [16, 22, 24, 32, 48, 64, 128, 256, 512]
+        ..sort((a, b) {
+          int rank(int s) => s >= px ? s - px : 10000 + px - s;
+          return rank(a).compareTo(rank(b));
+        });
+      final dirs = xdgDataDirs(env ?? Platform.environment);
+      outer:
+      for (final size in sizes) {
+        for (final dir in dirs) {
+          final path = '$dir/icons/hicolor/${size}x$size/apps/$name.png';
+          if (File(path).existsSync()) {
+            found = path;
+            break outer;
+          }
+        }
+      }
+      if (found == null) {
+        for (final dir in dirs) {
+          final path = '$dir/pixmaps/$name.png';
+          if (File(path).existsSync()) {
+            found = path;
+            break;
+          }
+        }
+      }
+    }
+    return _themed[key] = found;
   }
 
   /// Asks for the icons of the app folders [iconDirs]; completes when they are known (or

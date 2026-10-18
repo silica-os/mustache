@@ -136,8 +136,58 @@ void main() {
       final rows = openWith.submenu!.whereType<AmalfiMenuAction>().toList();
       expect(rows.first.label, 'Scrivi (default)');
       expect(rows.first.iconName, '/cache/apps/${iconDir.hashCode}-32.png');
-      // An app with no icon of its own has none (its label still lines up in the shell).
+      // An app that is not one of Silica's: none here (no icon theme entry; the shell keeps
+      // its room so the labels line up)...
       expect(rows.firstWhere((r) => r.label == 'Appunti').iconName, isNull);
+    },
+  );
+
+  testWidgets(
+    'an app that is not one of Silica\'s gives its icon theme PNG (mustache#28)',
+    (tester) async {
+      File(
+        '${home.path}/.local/share/applications/appunti.desktop',
+      ).writeAsStringSync(
+        '[Desktop Entry]\nType=Application\nName=Appunti\nExec=appunti %f\n'
+        'MimeType=text/plain;\nIcon=appunti\n',
+      );
+      final png = File('${home.path}/sys/icons/hicolor/32x32/apps/appunti.png')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([0x89, 0x50, 0x4e, 0x47]);
+      File('${home.path}/sys/icons/hicolor/256x256/apps/appunti.png')
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([0x89, 0x50, 0x4e, 0x47]);
+      tester.view.physicalSize = const Size(2000, 1400);
+      tester.view.devicePixelRatio = 2;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MustacheWindow(
+            start: dir.path,
+            places: [Place('casa', home.path, PlaceKind.home)],
+            trash: Place(
+              'Trash',
+              '${home.path}/.local/share/Trash/files',
+              PlaceKind.trash,
+            ),
+            settings: Settings('${home.path}/.config/s.json')..view = 'list',
+            iconsEnv: env,
+            menuIcons: MenuIcons(apps: (dir, px, dark) async => null),
+          ),
+        ),
+      );
+      await tester.pump();
+      await rightClick(tester, tester.getCenter(find.text('nota.txt')));
+      final menu = tester.widget<AmalfiMenu>(find.byType(AmalfiMenu).first);
+      final openWith = menu.entries.whereType<AmalfiMenuAction>().firstWhere(
+        (e) => e.label == 'Open With',
+      );
+      final appunti = openWith.submenu!
+          .whereType<AmalfiMenuAction>()
+          .firstWhere((r) => r.label == 'Appunti');
+      // 16 pt at 2x: the 32 px one, not the largest.
+      expect(appunti.iconName, png.path);
     },
   );
 

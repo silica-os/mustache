@@ -162,11 +162,21 @@ extension _Context on _MustacheWindowState {
       AmalfiAppIcon(app.silicaIcon ?? '', env: widget.iconsEnv);
 
   /// The same icon for the shell's menus (a PNG path, mustache#28): null while it is composed.
-  String? _appIconName(DesktopApp app) => widget.menuIcons.appIcon(
-    app.silicaIcon,
-    scale: View.of(context).devicePixelRatio,
-    dark: AmalfiTheme.of(context).isDark,
-  );
+  /// An app that is not one of Silica's: its icon theme's.
+  String? _appIconName(DesktopApp app) {
+    final scale = View.of(context).devicePixelRatio;
+    return app.silicaIcon != null
+        ? widget.menuIcons.appIcon(
+            app.silicaIcon,
+            scale: scale,
+            dark: AmalfiTheme.of(context).isDark,
+          )
+        : widget.menuIcons.themeIcon(
+            app.icon,
+            scale: scale,
+            env: widget.iconsEnv,
+          );
+  }
 
   /// Asks for the menu icons of every app ahead, so the menus have them when they open.
   void _prefetchMenuIcons() {

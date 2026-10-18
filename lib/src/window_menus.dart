@@ -112,7 +112,7 @@ extension _WindowMenus on _MustacheWindowState {
           : (key) => _arrangeBy(SortKey.values.byName(key)),
       sidebarShown: sidebarShown,
       toggleSidebar: run(_toggleSidebar),
-      previewShown: _previewPane || _previewForced,
+      previewShown: _paneOpen,
       togglePreview: run(
         () => _togglePart(WindowPart.previewPane),
         when: !dialog && !_previewForced,
@@ -221,6 +221,10 @@ extension _WindowMenus on _MustacheWindowState {
   }
 
   void _togglePart(WindowPart part) {
+    if (part == WindowPart.previewPane &&
+        (_previewForced || widget.dialog != null)) {
+      return;
+    }
     _update(() {
       switch (part) {
         case WindowPart.statusBar:
@@ -228,8 +232,13 @@ extension _WindowMenus on _MustacheWindowState {
           if (_statusBar) _free = freeBytes(_history.current);
           widget.settings?.statusBar = _statusBar;
         case WindowPart.previewPane:
-          _previewPane = !_previewPane;
-          widget.settings?.previewPane = _previewPane;
+          if (_inGallery) {
+            _galleryPane = !_galleryPane;
+            widget.settings?.galleryPane = _galleryPane;
+          } else {
+            _previewPane = !_previewPane;
+            widget.settings?.previewPane = _previewPane;
+          }
       }
     });
   }

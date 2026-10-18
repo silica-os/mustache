@@ -410,12 +410,23 @@ class _MustacheWindowState extends State<MustacheWindow>
   late bool _previewPane =
       widget.dialog == null && (widget.settings?.previewPane ?? false);
 
-  /// The gallery and the column view always show the pane (a dialog has none): the Show Preview
-  /// item cannot hide it there, so it is disabled instead of doing nothing.
+  /// The gallery's own pane state (open by default, as in the kit's `Gallery`): View > Hide
+  /// Preview closes it and the choice is remembered.
+  late bool _galleryPane =
+      widget.dialog == null && (widget.settings?.galleryPane ?? true);
+
+  /// The column view always shows the pane (a dialog has none): the Show Preview item cannot hide
+  /// it there, so it is disabled instead of doing nothing.
   bool get _previewForced =>
-      widget.dialog == null &&
-      !_searching &&
-      (_view == ViewMode.gallery || _view == ViewMode.columns);
+      widget.dialog == null && !_searching && _view == ViewMode.columns;
+
+  /// Whether the gallery's pane switch is the one in force.
+  bool get _inGallery =>
+      widget.dialog == null && !_searching && _view == ViewMode.gallery;
+
+  /// Whether the preview pane is open.
+  bool get _paneOpen =>
+      _inGallery ? _galleryPane : (_previewPane || _previewForced);
 
   late double _iconSide = widget.settings?.iconSide ?? defaultIconSide;
   int? _free;
@@ -1137,7 +1148,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                 // The preview section: the preview pane (⇧⌘P), always in the gallery and in the
                 // column view (kit `Gallery`, `Columns`).
                 // (A dialog has no pane: the file chooser keeps the columns alone.)
-                final pane = _previewPane || _previewForced;
+                final pane = _paneOpen;
                 // A press outside the search field takes the focus off it (an empty field then
                 // collapses back into the circle).
                 return Listener(
@@ -1626,27 +1637,48 @@ class _MustacheWindowState extends State<MustacheWindow>
   /// `Toolbar Preview`, `Preview Pane`).
   Widget _previewColumn() => SizedBox(
     width: previewPaneWidth,
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    child: Stack(
       children: [
-        MustachePreviewBar(
-          active: _active,
-          search: AmalfiToolbarPiece(child: _searchField(previewSearchWidth)),
-        ),
-        Expanded(
-          child: PreviewPane(
-            items: _selection,
-            kindOf: _kind,
-            env: widget.iconsEnv,
-            now: widget.now,
-            tagsOf: _tagsOf,
-            onAddTag: _addTag,
-            onTagsChanged: _setTagList,
-            actions: _paneActions(),
+        Positioned.fill(child: _previewColumnBody()),
+        // The divider runs the full height, up through the toolbar section, over the blur
+        // strip and not under it (spec: the line before an inspector stays).
+        Positioned(
+          left: 0,
+          top: 0,
+          bottom: 0,
+          width: 1,
+          child: IgnorePointer(
+            child: ColoredBox(
+              key: const ValueKey('preview divider'),
+              color: AmalfiTheme.of(context).colors.lineSeparator,
+            ),
           ),
         ),
       ],
     ),
+  );
+
+  Widget _previewColumnBody() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      MustachePreviewBar(
+        active: _active,
+        search: AmalfiToolbarPiece(child: _searchField(previewSearchWidth)),
+      ),
+      Expanded(
+        child: PreviewPane(
+          items: _selection,
+          kindOf: _kind,
+          env: widget.iconsEnv,
+          now: widget.now,
+          tagsOf: _tagsOf,
+          onAddTag: _addTag,
+          onTagsChanged: _setTagList,
+          actions: _paneActions(),
+          edge: false,
+        ),
+      ),
+    ],
   );
 
   /// Where back/forward start with the sidebar hidden: after the window buttons slot and the

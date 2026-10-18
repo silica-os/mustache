@@ -132,6 +132,12 @@ class Settings extends ChangeNotifier {
     _set('previewPane', value);
   }
 
+  /// The gallery's own preview pane (open unless the user hid it).
+  bool? get galleryPane => _bool('galleryPane');
+  set galleryPane(bool? value) {
+    _set('galleryPane', value);
+  }
+
   /// The icon size of the icon view.
   double? get iconSide {
     final v = _data['iconSide'];

@@ -9,6 +9,7 @@ import 'package:mustache/src/settings.dart';
 import 'package:mustache/src/window.dart';
 
 void main() {
+  paneToggleTests();
   testWidgets('⌘4: gallery with the strip and the pane; → advances', (
     tester,
   ) async {
@@ -96,4 +97,62 @@ void main() {
       expect(big.shortestSide, greaterThan(400));
     },
   );
+}
+
+void paneToggleTests() {
+  testWidgets('Show/Hide Preview toggles the gallery pane and is remembered', (
+    tester,
+  ) async {
+    final home = Directory.systemTemp.createTempSync('mustache-galleria');
+    addTearDown(() => home.deleteSync(recursive: true));
+    File('${home.path}/a.txt').writeAsStringSync('a');
+    tester.view.physicalSize = const Size(1200, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final path = '${home.path}/.s.json';
+    final settings = Settings(path)..view = 'gallery';
+    Future<void> open() async {
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MustacheWindow(
+            key: UniqueKey(),
+            start: home.path,
+            places: [Place('casa', home.path, PlaceKind.home)],
+            trash: Place('Trash', '${home.path}/Cestino', PlaceKind.trash),
+            settings: Settings(path),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    await open();
+    final pane = find.byKey(const ValueKey('preview pane'));
+    expect(pane, findsOneWidget);
+    expect(settings.galleryPane, isNull);
+    Future<void> combo() async {
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.metaLeft);
+      await tester.sendKeyDownEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyP);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.shiftLeft);
+      await tester.sendKeyUpEvent(LogicalKeyboardKey.metaLeft);
+      await tester.pump();
+    }
+
+    await combo();
+    expect(pane, findsNothing);
+    expect(Settings(path).galleryPane, isFalse);
+    // A new window keeps it hidden; showing it again works.
+    await open();
+    expect(pane, findsNothing);
+    await combo();
+    expect(pane, findsOneWidget);
+    expect(Settings(path).galleryPane, isTrue);
+    // The full-height divider runs from the top of the window, over the bar.
+    final line = tester.getRect(find.byKey(const ValueKey('preview divider')));
+    expect(line.top, 0);
+    expect(line.bottom, 800);
+    expect(line.width, 1);
+  });
 }

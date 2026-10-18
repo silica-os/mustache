@@ -49,6 +49,7 @@ class PreviewPane extends StatelessWidget {
     this.onAddTag,
     this.onTagsChanged,
     this.actions = const [],
+    this.edge = true,
   });
 
   final double width;
@@ -68,6 +69,9 @@ class PreviewPane extends StatelessWidget {
 
   /// The buttons of the bottom bar (empty: no bar).
   final List<PaneAction> actions;
+
+  /// Whether the pane draws its own leading divider (the window draws a full-height one).
+  final bool edge;
 
   @override
   Widget build(BuildContext context) {
@@ -91,13 +95,14 @@ class PreviewPane extends StatelessWidget {
                 if (items.isNotEmpty && actions.isNotEmpty) _actionsBar(colors),
               ],
             ),
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: 1,
-              child: ColoredBox(color: colors.lineSeparator),
-            ),
+            if (edge)
+              Positioned(
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: 1,
+                child: ColoredBox(color: colors.lineSeparator),
+              ),
           ],
         ),
       ),

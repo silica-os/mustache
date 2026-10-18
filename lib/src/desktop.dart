@@ -359,6 +359,19 @@ String? customizeArgument(List<String> args) {
   return null;
 }
 
+/// What a new window does on its own at start, asked by the Dock menu (DOCK-02).
+enum LaunchAction { none, find, goToFolder }
+
+/// `--find` (the search field focused) or `--go-to-folder` (the Go to Folder sheet) among the
+/// process arguments; the first one wins.
+LaunchAction launchActionOf(List<String> args) {
+  for (final a in args) {
+    if (a == '--find') return LaunchAction.find;
+    if (a == '--go-to-folder') return LaunchAction.goToFolder;
+  }
+  return LaunchAction.none;
+}
+
 /// Quotes a path for `sh -c`.
 String shellQuote(String s) => "'${s.replaceAll("'", r"'\''")}'";
 

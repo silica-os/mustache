@@ -106,6 +106,14 @@ void main(List<String> args) {
   // The buttons never move as a window narrows: the window stops where they stay clear.
   SilicaWindow.setSizeLimits(min: minimumWindowSize).ignore();
   var opensAt = start;
+  // Only the first window does what the Dock menu asked for.
+  var launch = launchActionOf(args);
+  LaunchAction takeLaunch() {
+    final taken = launch;
+    launch = LaunchAction.none;
+    return taken;
+  }
+
   runApp(
     AppLocalizationsScope(
       child: Directionality(
@@ -129,6 +137,7 @@ void main(List<String> args) {
                   onLocation: onLocation,
                   focused: active,
                   customize: customize,
+                  launch: takeLaunch(),
                 ),
               ),
             ),

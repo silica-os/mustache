@@ -28,6 +28,7 @@ import 'alerts.dart';
 import 'apps.dart';
 import 'column_view.dart';
 import 'dialog.dart';
+import 'desktop.dart' show LaunchAction;
 import 'folder_customize.dart';
 import 'folder_icons.dart';
 import 'folder_style.dart';
@@ -212,11 +213,15 @@ class MustacheWindow extends StatefulWidget {
     this.dialog,
     this.onDialogFinish,
     this.customize,
+    this.launch = LaunchAction.none,
   });
 
   /// A folder whose Customize Folder popover opens at start (`--customize=<path>`,
   /// sent by the desktop's context menu; `start` is the folder that holds it).
   final String? customize;
+
+  /// What the window does once it is open (`--find`, `--go-to-folder`: the Dock menu's items).
+  final LaunchAction launch;
 
   /// The window is an Open or Save dialog for the portal (null: the normal window).
   final DialogOptions? dialog;
@@ -519,6 +524,19 @@ class _MustacheWindowState extends State<MustacheWindow>
     _externalDrags = SilicaDrag.events.listen(_dragEvent);
     HardwareKeyboard.instance.addHandler(_springKey);
     if (widget.customize case final path?) _customizing = path;
+    if (widget.launch != LaunchAction.none) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        switch (widget.launch) {
+          case LaunchAction.find:
+            _startSearch();
+          case LaunchAction.goToFolder:
+            _openGoToFolder();
+          case LaunchAction.none:
+            break;
+        }
+      });
+    }
     _searchFocus.addListener(_menusChanged);
     _searchFocus.addListener(_searchFocusChanged);
     _saveFocus.addListener(_menusChanged);

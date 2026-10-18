@@ -49,7 +49,7 @@ class Settings extends ChangeNotifier {
       final dir = File(path).parent;
       dir.createSync(recursive: true);
       _watch = dir.watch().listen((event) {
-        if (!event.path.endsWith('settings.json')) return;
+        if (!_concerns(event)) return;
         _debounce?.cancel();
         _debounce = Timer(const Duration(milliseconds: 80), () {
           final before = jsonEncode(_data);
@@ -60,6 +60,17 @@ class Settings extends ChangeNotifier {
     } on FileSystemException {
       // No watching: changes show at the next launch.
     }
+  }
+
+  /// Whether a change in the folder touches the file: also an atomic replace (a temporary file
+  /// renamed over it, as editors, `sed -i` and most tools write), which is a move whose source is
+  /// the temporary name and whose destination is the file.
+  bool _concerns(FileSystemEvent event) {
+    final name = File(path).uri.pathSegments.last;
+    bool isFile(String? p) =>
+        p != null && File(p).uri.pathSegments.last == name;
+    return isFile(event.path) ||
+        (event is FileSystemMoveEvent && isFile(event.destination));
   }
 
   @override

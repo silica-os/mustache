@@ -79,6 +79,31 @@ void main() {
       },
     );
 
+    test(
+      'an atomic replace of the file (write elsewhere, rename over) is heard too',
+      () async {
+        // Editors, `sed -i`, Settings and other tools write a temporary file and rename it
+        // over settings.json: the watcher sees a move whose source is the temporary name.
+        Directory('${root.path}/m').createSync();
+        final path = '${root.path}/m/settings.json';
+        File(path).writeAsStringSync('{"view": "icons", "previewPane": true}');
+        final s = Settings(path)..watch();
+        addTearDown(s.dispose);
+        expect(s.previewPane, isTrue);
+        var heard = 0;
+        s.addListener(() => heard++);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        File('${root.path}/m/.settings.json.tmp')
+          ..writeAsStringSync('{"view": "icons"}')
+          ..renameSync(path);
+        for (var i = 0; i < 40 && heard == 0; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+        expect(heard, greaterThan(0));
+        expect(s.previewPane, isNull);
+      },
+    );
+
     test('favourite order puts the named colours first', () {
       expect(favouriteOrder(const []), TagColor.values);
       expect(favouriteOrder(['blue', 'x', 'blue', 'red']).take(3), [

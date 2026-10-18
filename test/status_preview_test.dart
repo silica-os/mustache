@@ -120,4 +120,58 @@ void main() {
       expect(tester.getSize(pane).width, previewPaneWidth);
     },
   );
+
+  testWidgets(
+    'a window built from settings.json without previewPane has no pane in icon view, also after '
+    'the file was replaced while the app ran (mustache#29)',
+    (tester) async {
+      final home = Directory.systemTemp.createTempSync('mustache-pane');
+      addTearDown(() => home.deleteSync(recursive: true));
+      File('${home.path}/a.txt').writeAsStringSync('x');
+      tester.view.physicalSize = const Size(1005, 679);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final dir = Directory('${home.path}/.config/mustache')
+        ..createSync(recursive: true);
+      final path = '${dir.path}/settings.json';
+      // An earlier session left the pane on; the app is running.
+      File(path).writeAsStringSync('{"view":"icons","previewPane":true}');
+      // (The watcher and its debounce run on real time.)
+      final settings = (await tester.runAsync(
+        () async => Settings(path)..watch(),
+      ))!;
+      addTearDown(settings.dispose);
+      expect(settings.previewPane, isTrue);
+      // The file is then replaced (temporary file renamed over it) with the one of the report.
+      await tester.runAsync(() async {
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+        File('${dir.path}/settings.json.new')
+          ..writeAsStringSync(
+            '{"view":"icons","sidebarWidth":206.96484375,'
+            '"infoSections":["general","name","comments","more"]}',
+          )
+          ..renameSync(path);
+        for (var i = 0; i < 40 && settings.previewPane != null; i++) {
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+        }
+      });
+      expect(settings.previewPane, isNull);
+      // A fresh window: icon view, no pane, the search field in the main toolbar.
+      await tester.pumpWidget(
+        Directionality(
+          textDirection: TextDirection.ltr,
+          child: MustacheWindow(
+            start: home.path,
+            places: [Place('casa', home.path, PlaceKind.home)],
+            trash: Place('Trash', '${home.path}/Cestino', PlaceKind.trash),
+            settings: settings,
+          ),
+        ),
+      );
+      await tester.pump();
+      expect(find.byType(IconView), findsOneWidget);
+      expect(find.byKey(const ValueKey('preview divider')), findsNothing);
+      expect(find.byType(PreviewPane), findsNothing);
+    },
+  );
 }

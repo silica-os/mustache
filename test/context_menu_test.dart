@@ -108,6 +108,16 @@ void main() {
     final defaultTop = tester.getTopLeft(find.text('Scrivi (default)')).dy;
     expect(tester.getTopLeft(find.text('Appunti')).dy, greaterThan(defaultTop));
     expect(tester.getSize(find.byType(AmalfiMenu).last).width, 192);
+    // Kit `Submenu/Open With`: 4 pt padding, rows of 24, separators of 8 (default, others, Other…).
+    expect(
+      tester.getSize(find.byType(AmalfiMenu).last).height,
+      4 + 24 + 8 + 24 + 8 + 24 + 4,
+    );
+    // Kit `Cascade`: the submenu overlaps the parent menu's body by 4 pt.
+    expect(
+      tester.getRect(find.byType(AmalfiMenu).last).left,
+      tester.getRect(find.byType(AmalfiMenu).first).right - 4,
+    );
     // Silica's own app has its 16 pt icon; the other apps keep the slot, empty (labels line up).
     expect(find.byType(AmalfiAppIcon), findsNWidgets(2));
     // Its canvas is 16 pt, centred in the menu's icon slot: the body is 824/1024 of it.
@@ -125,6 +135,24 @@ void main() {
       tester.getTopLeft(find.text('Appunti')).dx,
       tester.getTopLeft(find.text('Scrivi (default)')).dx,
     );
+  });
+
+  testWidgets('choosing an app in Open With closes the whole cascade, even when '
+      'the app cannot start', (tester) async {
+    await pump(tester);
+    final at = tester.getCenter(find.text('nota.txt'));
+    await rightClick(tester, at);
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: at);
+    await mouse.moveTo(tester.getCenter(find.text('Open With')));
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
+    // `appunti` is not installed: launching it fails (an alert), the menu must still go.
+    await tester.tap(find.text('Appunti'));
+    for (var i = 0; i < 15; i++) {
+      await tester.pump(const Duration(milliseconds: 60));
+    }
+    expect(find.byType(AmalfiMenu), findsNothing);
   });
 
   testWidgets('a right click on an unselected row does not select it: ring', (

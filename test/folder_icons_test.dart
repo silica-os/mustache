@@ -22,6 +22,16 @@ void main() {
     expect(folderHasItems('${dir.path}/missing'), isFalse);
   });
 
+  test('a folder that gains an item right after being asked is full', () {
+    for (var i = 0; i < 20; i++) {
+      final dir = Directory.systemTemp.createTempSync('full-folder');
+      addTearDown(() => dir.deleteSync(recursive: true));
+      expect(folderHasItems(dir.path), isFalse);
+      File('${dir.path}/a.txt').writeAsStringSync('');
+      expect(folderHasItems(dir.path), isTrue);
+    }
+  });
+
   test('the answer follows the folder when its contents change', () {
     final dir = Directory.systemTemp.createTempSync('full-folder');
     addTearDown(() => dir.deleteSync(recursive: true));

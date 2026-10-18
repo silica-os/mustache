@@ -31,6 +31,12 @@ bool folderHasItems(String path) {
         break;
       }
     }
+    // A folder changed within the filesystem's timestamp granularity could change again without
+    // its modification time moving: such an answer is not cached.
+    if (DateTime.now().difference(changed) < const Duration(seconds: 2)) {
+      _hasItems.remove(path);
+      return found;
+    }
     if (_hasItems.length > 2000) _hasItems.clear();
     _hasItems[path] = (changed, found);
     return found;

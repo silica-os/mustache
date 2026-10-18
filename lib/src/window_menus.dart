@@ -112,10 +112,10 @@ extension _WindowMenus on _MustacheWindowState {
           : (key) => _arrangeBy(SortKey.values.byName(key)),
       sidebarShown: sidebarShown,
       toggleSidebar: run(_toggleSidebar),
-      previewShown: _previewPane,
+      previewShown: _previewPane || _previewForced,
       togglePreview: run(
         () => _togglePart(WindowPart.previewPane),
-        when: !dialog,
+        when: !dialog && !_previewForced,
       ),
       pathBarShown: _pathBar,
       togglePathBar: run(_togglePathBar),

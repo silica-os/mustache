@@ -155,6 +155,7 @@ class InfoPanel extends StatefulWidget {
     this.onHeight,
     this.tags,
     this.onAddTag,
+    this.onTagsChanged,
   });
 
   final Entry entry;
@@ -188,6 +189,7 @@ class InfoPanel extends StatefulWidget {
   /// The item's tags and adding one from the field (null: no field).
   final List<String>? tags;
   final ValueChanged<String>? onAddTag;
+  final ValueChanged<List<String>>? onTagsChanged;
 
   @override
   State<InfoPanel> createState() => _InfoPanelState();
@@ -427,6 +429,7 @@ class _InfoPanelState extends State<InfoPanel> {
             controller: _tagInput,
             placeholder: l10n.addTag,
             tokens: widget.tags!,
+            onTokensChanged: widget.onTagsChanged,
             width: infoWidth - 2 * infoPadding,
             onSubmitted: (value) {
               final tag = value.trim();

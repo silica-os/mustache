@@ -409,6 +409,14 @@ class _MustacheWindowState extends State<MustacheWindow>
       widget.dialog == null && (widget.settings?.statusBar ?? false);
   late bool _previewPane =
       widget.dialog == null && (widget.settings?.previewPane ?? false);
+
+  /// The gallery and the column view always show the pane (a dialog has none): the Show Preview
+  /// item cannot hide it there, so it is disabled instead of doing nothing.
+  bool get _previewForced =>
+      widget.dialog == null &&
+      !_searching &&
+      (_view == ViewMode.gallery || _view == ViewMode.columns);
+
   late double _iconSide = widget.settings?.iconSide ?? defaultIconSide;
   int? _free;
 
@@ -1129,12 +1137,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                 // The preview section: the preview pane (⇧⌘P), always in the gallery and in the
                 // column view (kit `Gallery`, `Columns`).
                 // (A dialog has no pane: the file chooser keeps the columns alone.)
-                final pane =
-                    _previewPane ||
-                    (widget.dialog == null &&
-                        !_searching &&
-                        (_view == ViewMode.gallery ||
-                            _view == ViewMode.columns));
+                final pane = _previewPane || _previewForced;
                 // A press outside the search field takes the focus off it (an empty field then
                 // collapses back into the circle).
                 return Listener(
@@ -1638,6 +1641,7 @@ class _MustacheWindowState extends State<MustacheWindow>
             now: widget.now,
             tagsOf: _tagsOf,
             onAddTag: _addTag,
+            onTagsChanged: _setTagList,
             actions: _paneActions(),
           ),
         ),

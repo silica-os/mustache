@@ -151,10 +151,8 @@ extension _Context on _MustacheWindowState {
         ..add(path);
       _anchor = _cursor = path;
     }
-    if (!_previewPane) {
-      _previewPane = true;
-      widget.settings?.previewPane = true;
-    }
+    // Only for now: the pane opens to type the tags, it is not the user's setting to keep.
+    _previewPane = true;
   });
 
   /// The 16 pt icon of an app in Open With (kit `Icons/App/16`), drawn from its own icon; an app

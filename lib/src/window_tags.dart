@@ -53,9 +53,16 @@ extension _Tags on _MustacheWindowState {
   void _addTag(Entry entry, String tag) {
     final tags = [..._tagsOf(entry)];
     if (tags.contains(tag)) return;
-    tags.add(tag);
+    _setTagList(entry, [...tags, tag]);
+  }
+
+  /// The tags left after one was removed from a tag field (Get Info, preview pane), or the field
+  /// was cleared.
+  void _setTagList(Entry entry, List<String> tags) {
     if (writeTags(entry.path, tags)) {
       _update(() => _tagCache[entry.path] = tags);
+      _infoRevision.value++;
+      // A colour tag tints a folder: the style (and its thumbnail) is read again.
       if (entry.isDirectory) folderStyles.invalidate([entry.path]);
     } else {
       _showError(l10n.tagError, l10n.tagErrorDetail);

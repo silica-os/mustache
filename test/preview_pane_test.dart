@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mustache/src/info.dart';
 import 'package:mustache/src/model.dart';
 import 'package:mustache/src/preview_pane.dart';
 
@@ -65,4 +66,58 @@ void main() {
     await tester.tap(find.byKey(const ValueKey('action More')));
     expect(more, isNotNull);
   });
+
+  for (final info in [false, true]) {
+    testWidgets('tags come off from ${info ? 'Get Info' : 'the pane'}', (
+      tester,
+    ) async {
+      final entry = Entry(
+        name: 'Alfa',
+        path: '/prova/Alfa',
+        isDirectory: true,
+        size: 0,
+        modified: DateTime(2026, 10, 14, 16, 1),
+      );
+      tester.view.physicalSize = const Size(400, 800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      List<String>? left;
+      await tester.pumpWidget(
+        kitScene(
+          info
+              ? InfoPanel(
+                  entry: entry,
+                  kind: 'Folder',
+                  open: const {InfoSection.general},
+                  onToggle: (_) {},
+                  onClose: () {},
+                  onRename: (_) {},
+                  tags: const ['Orange'],
+                  onAddTag: (_) {},
+                  onTagsChanged: (t) => left = t,
+                )
+              : SizedBox(
+                  width: 260,
+                  height: 588,
+                  child: PreviewPane(
+                    items: [entry],
+                    kindOf: (_) => 'Folder',
+                    now: DateTime(2026, 10, 14, 18),
+                    tagsOf: (_) => const ['Orange'],
+                    onAddTag: (_, tag) {},
+                    onTagsChanged: (_, t) => left = t,
+                    actions: const [],
+                  ),
+                ),
+        ),
+      );
+      await tester.tap(find.byType(EditableText));
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump();
+      expect(left, isEmpty);
+    });
+  }
 }

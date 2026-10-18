@@ -600,6 +600,7 @@ void main() {
     Future<bool> pumpWindow(
       WidgetTester tester, {
       bool customize = false,
+      bool pane = false,
     }) async {
       home = homeTemp('mustache-folder-menu');
       folder = Directory('${home.path}/Doc/Progetti')
@@ -616,7 +617,9 @@ void main() {
             start: '${home.path}/Doc',
             places: [Place('casa', home.path, PlaceKind.home)],
             trash: Place('Trash', '${home.path}/Cestino', PlaceKind.trash),
-            settings: Settings('${home.path}/s.json')..view = 'list',
+            settings: Settings('${home.path}/s.json')
+              ..view = 'list'
+              ..previewPane = pane,
             iconsEnv: {...env, 'HOME': home.path},
             customize: customize ? folder.path : null,
           ),
@@ -690,6 +693,60 @@ void main() {
       expect(drawnFolder(tester)?.tint, 'orange');
       writeTags(folder.path, []);
       folderStyles.invalidate([folder.path]);
+    });
+
+    testWidgets('a colour tag comes off a folder from the preview pane', (
+      tester,
+    ) async {
+      if (!await pumpWindow(tester, pane: true)) {
+        markTestSkipped('no extended attributes on this file system');
+        return;
+      }
+      await tester.tap(
+        find.descendant(
+          of: find.byType(ListView),
+          matching: find.text('Progetti'),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Add a tag…'));
+      await tester.pump();
+      await tester.enterText(find.byType(EditableText).last, 'Orange');
+      await tester.testTextInput.receiveAction(TextInputAction.done);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(readTags(folder.path), ['Orange']);
+      expect(folderStyles.look(folder.path).tint, 'orange');
+      // Backspace selects the last token, a second one removes it.
+      await tester.tap(find.byType(EditableText).last);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump();
+      await tester.sendKeyEvent(LogicalKeyboardKey.backspace);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(readTags(folder.path), isEmpty);
+      expect(folderStyles.look(folder.path).tint, isNull);
+      expect(drawnFolder(tester)?.tint, isNull);
+    });
+
+    testWidgets('Edit Tags… shows the pane without making it a setting', (
+      tester,
+    ) async {
+      if (!await pumpWindow(tester, customize: true)) {
+        markTestSkipped('no extended attributes on this file system');
+        return;
+      }
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await tester.tap(find.byKey(const ValueKey('folder add tag')));
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.tap(find.text('Edit Tags…'));
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(find.byKey(const ValueKey('preview pane')), findsOneWidget);
+      // The pane stays open only until the window closes: it is not saved as a setting.
+      expect(Settings('${home.path}/s.json').previewPane, isNot(true));
     });
 
     testWidgets('Customize Folder… opens the popover on the folder icon', (

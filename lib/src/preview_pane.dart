@@ -47,6 +47,7 @@ class PreviewPane extends StatelessWidget {
     this.now,
     this.tagsOf,
     this.onAddTag,
+    this.onTagsChanged,
     this.actions = const [],
   });
 
@@ -63,6 +64,7 @@ class PreviewPane extends StatelessWidget {
   /// The tags of an item and adding one from the field.
   final List<String> Function(Entry entry)? tagsOf;
   final void Function(Entry entry, String tag)? onAddTag;
+  final void Function(Entry entry, List<String> tags)? onTagsChanged;
 
   /// The buttons of the bottom bar (empty: no bar).
   final List<PaneAction> actions;
@@ -220,6 +222,7 @@ class PreviewPane extends StatelessWidget {
                 key: ValueKey('tags field ${entry.path}'),
                 tags: tagsOf!(entry),
                 onAdd: (tag) => onAddTag?.call(entry, tag),
+                onTagsChanged: (tags) => onTagsChanged?.call(entry, tags),
               ),
             ],
             const SizedBox(height: 20),
@@ -360,9 +363,15 @@ class PreviewPane extends StatelessWidget {
 /// The tags field (kit `Fields/Search Field/Regular`): shows the item's tags as tokens, Return adds
 /// one.
 class _TagField extends StatefulWidget {
-  const _TagField({super.key, required this.tags, required this.onAdd});
+  const _TagField({
+    super.key,
+    required this.tags,
+    required this.onAdd,
+    this.onTagsChanged,
+  });
   final List<String> tags;
   final ValueChanged<String> onAdd;
+  final ValueChanged<List<String>>? onTagsChanged;
 
   @override
   State<_TagField> createState() => _TagFieldState();
@@ -389,6 +398,7 @@ class _TagFieldState extends State<_TagField> {
     controller: _controller,
     placeholder: l10n.addTag,
     tokens: widget.tags,
+    onTokensChanged: widget.onTagsChanged,
     width: previewPaneWidth - 2 * panePadding,
     onSubmitted: _submit,
   );

@@ -81,6 +81,7 @@ extension _InfoWindows on _MustacheWindowState {
         onToggle: _toggleInfoSection,
         tags: _tagsOf(entry),
         onAddTag: (tag) => _addTag(entry, tag),
+        onTagsChanged: (tags) => _setTagList(entry, tags),
         onClose: () => info.controller?.close(),
         onRename: (name) {
           final old = info.path;

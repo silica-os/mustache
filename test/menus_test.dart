@@ -255,7 +255,7 @@ void main() {
     expect(enabled('Go', 'Back'), isFalse);
     expect(enabled('Go', 'Forward'), isFalse);
     expect(enabled('Go', 'Home'), isTrue);
-    expect(enabled('Go', 'Recents'), isFalse);
+    expect(enabled('Go', 'Recents'), isTrue);
     expect(enabled('Go', 'Recent Folders'), isFalse);
     // Window: the tab items wait for tabs.
     expect(enabled('Window', 'Show Next Tab'), isFalse);

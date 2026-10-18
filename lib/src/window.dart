@@ -57,6 +57,7 @@ import 'transfer_ui.dart';
 import 'xattr.dart';
 import 'sidebar.dart';
 import 'tabs.dart';
+import 'recents.dart';
 import 'tags.dart';
 import 'toolbar.dart';
 
@@ -532,6 +533,8 @@ class _MustacheWindowState extends State<MustacheWindow>
             _startSearch();
           case LaunchAction.goToFolder:
             _openGoToFolder();
+          case LaunchAction.recents:
+            _showRecents();
           case LaunchAction.none:
             break;
         }
@@ -671,7 +674,7 @@ class _MustacheWindowState extends State<MustacheWindow>
     final tag = _tagView;
     if (tag != null) {
       _tagCache.clear();
-      _showTag(tag);
+      tag == recentsView ? _showRecents() : _showTag(tag);
       return;
     }
     _unwatchStyles(keep: _history.current);
@@ -1727,6 +1730,8 @@ class _MustacheWindowState extends State<MustacheWindow>
                 ? l10n.thisComputer
                 : displayName(_searchFolder),
           )
+        : _tagView == recentsView
+        ? l10n.menuRecents
         : _tagView ?? displayName(_history.current),
     active: _active,
     canGoBack: _history.canGoBack || _searching,

@@ -364,6 +364,10 @@ enum PlaceKind {
   search,
 }
 
+/// The name of the virtual view of the recently used files, kept where a tag name is (it
+/// cannot be one: tag names are not made of control characters).
+const String recentsView = '\u0001recents';
+
 /// The prefix of tag paths in the sidebar.
 const String tagPathPrefix = 'tag:';
 

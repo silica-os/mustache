@@ -1688,7 +1688,7 @@ abstract class AppLocalizations {
   /// **'Enclosing Folder'**
   String get menuEnclosingFolder;
 
-  /// Go menu (disabled).
+  /// Go menu: the recently used files; also the title of that view.
   ///
   /// In en, this message translates to:
   /// **'Recents'**

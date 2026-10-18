@@ -55,6 +55,7 @@ class MenuSpec {
     this.selectAll,
     this.find,
     this.goToFolder,
+    this.recents,
     this.settings,
     this.view,
     this.setView,
@@ -128,6 +129,9 @@ class MenuSpec {
 
   /// Go › Go to Folder… (⇧⌘G).
   final VoidCallback? goToFolder;
+
+  /// Go › Recents (⇧⌘F): the recently used files.
+  final VoidCallback? recents;
 
   /// App › Settings… (⌘,).
   final VoidCallback? settings;
@@ -578,7 +582,7 @@ SilicaMenu _goMenu(MenuSpec s) {
       _group([
         _item(
           l10n.menuRecents,
-          null,
+          s.recents,
           key: _cmd(LogicalKeyboardKey.keyF, shift: true),
         ),
         place(

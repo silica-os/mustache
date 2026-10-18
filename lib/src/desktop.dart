@@ -360,14 +360,16 @@ String? customizeArgument(List<String> args) {
 }
 
 /// What a new window does on its own at start, asked by the Dock menu (DOCK-02).
-enum LaunchAction { none, find, goToFolder }
+enum LaunchAction { none, find, goToFolder, recents }
 
-/// `--find` (the search field focused) or `--go-to-folder` (the Go to Folder sheet) among the
+/// `--find` (the search field focused), `--go-to-folder` (the Go to Folder sheet) or `--recents`
+/// (the recently used files) among the
 /// process arguments; the first one wins.
 LaunchAction launchActionOf(List<String> args) {
   for (final a in args) {
     if (a == '--find') return LaunchAction.find;
     if (a == '--go-to-folder') return LaunchAction.goToFolder;
+    if (a == '--recents') return LaunchAction.recents;
   }
   return LaunchAction.none;
 }

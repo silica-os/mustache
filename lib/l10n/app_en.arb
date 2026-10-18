@@ -1380,7 +1380,7 @@
   },
   "menuRecents": "Recents",
   "@menuRecents": {
-    "description": "Go menu (disabled)."
+    "description": "Go menu: the recently used files; also the title of that view."
   },
   "menuDocuments": "Documents",
   "@menuDocuments": {

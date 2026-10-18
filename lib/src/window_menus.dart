@@ -29,6 +29,16 @@ extension _WindowMenus on _MustacheWindowState {
 
   void _tabCommand(Intent intent) => Actions.maybeInvoke(context, intent);
 
+  /// Go › Recents: leaves a search or another view for the list of recently used files.
+  void _openRecents() {
+    if (_searching) {
+      _searching = false;
+      _searchToken++;
+      _searchQuery.clear();
+    }
+    _showRecents();
+  }
+
   MenuSpec _menuSpec() {
     final dialog = widget.dialog != null;
     final blocked = _modalOpen || _conflict != null;
@@ -97,6 +107,7 @@ extension _WindowMenus on _MustacheWindowState {
       selectAll: run(_selectAll, when: _ordered.isNotEmpty),
       find: run(_startSearch),
       goToFolder: run(_openGoToFolder, when: !dialog),
+      recents: run(_openRecents, when: !dialog),
       settings: dialog ? null : _openSettings,
       view: _view,
       setView: blocked ? null : _setView,

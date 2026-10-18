@@ -234,4 +234,21 @@ extension _Tags on _MustacheWindowState {
       // An unreadable folder stops the search: what was found stays.
     }
   }
+
+  /// Shows the recently used files (Go › Recents), most recent first.
+  void _showRecents() {
+    final env = widget.iconsEnv ?? Platform.environment;
+    final found = <Entry>[
+      for (final path in recentPaths(env))
+        if (entryAt(path) case final entry?) entry,
+    ];
+    _tagSearch++;
+    _update(() {
+      _tagView = recentsView;
+      _entries = found;
+      _selected.clear();
+      _anchor = null;
+      _error = null;
+    });
+  }
 }

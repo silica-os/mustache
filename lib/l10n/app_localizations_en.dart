@@ -1234,4 +1234,67 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get showPackageContents => 'Show Package Contents';
+
+  @override
+  String get installKeepBoth => 'Keep Both';
+
+  @override
+  String get kindApplication => 'Application';
+
+  @override
+  String get kindFlatpakApp => 'Application (Flatpak)';
+
+  @override
+  String get infoVersion => 'Version';
+
+  @override
+  String get infoDeveloper => 'Developer';
+
+  @override
+  String get infoSignature => 'Signature';
+
+  @override
+  String get infoAccess => 'Access';
+
+  @override
+  String get signatureVerified => 'Identified developer';
+
+  @override
+  String get signatureSelfSigned => 'Self-signed';
+
+  @override
+  String get signatureUnsigned => 'Not signed';
+
+  @override
+  String get signatureRevoked => 'Revoked developer';
+
+  @override
+  String get signatureTampered => 'Damaged or modified';
+
+  @override
+  String get signatureSystem => 'Part of Silica';
+
+  @override
+  String get signatureFlatpak => 'Installed with Flatpak';
+
+  @override
+  String get accessSystem => 'The whole computer (system app)';
+
+  @override
+  String get accessNetwork => 'Network';
+
+  @override
+  String get accessHome => 'Home folder';
+
+  @override
+  String get accessFolders => 'Some folders';
+
+  @override
+  String get accessDevices => 'All devices';
+
+  @override
+  String get accessBackground => 'Background';
+
+  @override
+  String get accessNone => 'Its own files only';
 }

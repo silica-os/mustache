@@ -75,6 +75,7 @@ extension _InfoWindows on _MustacheWindowState {
         mime: entry.isDirectory ? null : _typeOf(entry),
         env: widget.iconsEnv,
         open: _infoOpen,
+        app: _appDetailsOf(entry),
         openWith: entry.isDirectory
             ? null
             : _registry.defaultFor(_typeOf(entry))?.name,
@@ -102,6 +103,47 @@ extension _InfoWindows on _MustacheWindowState {
       );
     },
   );
+
+  /// Get Info's details when `entry` is an app (a bundle, or a Flatpak app of the Applications
+  /// view): from the cache, else null while they are read (the panel shows them when they come).
+  AppDetails? _appDetailsOf(Entry entry) {
+    final flatpak = _flatpaks[entry.path];
+    if (flatpak == null && !(entry.isDirectory && isAppBundle(entry.path))) {
+      return null;
+    }
+    if (_appDetails[entry.path] case final cached?) return cached;
+    if (_appDetailsLoading.add(entry.path)) {
+      unawaited(_loadAppDetails(entry.path, flatpak));
+    }
+    return null;
+  }
+
+  Future<void> _loadAppDetails(String path, SilicaInstalledApp? flatpak) async {
+    final AppDetails details;
+    if (flatpak != null) {
+      details = AppDetails(
+        version: flatpak.version,
+        developer: flatpak.developer,
+        signature: l10n.signatureFlatpak,
+      );
+    } else {
+      final app = _installed[path];
+      // The verdict of Gatekeeper on the bundle as it is now (its signature, its files).
+      final assessment = await SilicaTrust.assess(path);
+      final system = isSystemApp(path);
+      details = AppDetails(
+        version: app?.version ?? bundleVersion(path) ?? '',
+        developer: app?.developer ?? '',
+        signature: assessment == null ? '' : signatureLabel(assessment.info),
+        access: accessLabel(app?.permissions ?? const {}, system: system),
+      );
+    }
+    _appDetailsLoading.remove(path);
+    if (!mounted) return;
+    _appDetails[path] = details;
+    _infoRevision.value++;
+    _update(() {});
+  }
 
   /// A section opens or closes in every Get Info (R11.1), windows and panels alike, and the
   /// choice is kept.

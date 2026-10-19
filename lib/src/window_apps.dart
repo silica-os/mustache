@@ -80,7 +80,22 @@ extension _Apps on _MustacheWindowState {
       return;
     }
     await _loadVolumes();
-    if (mounted) _navigate(mount);
+    if (!mounted) return;
+    _navigate(mount);
+    if (volumeOf(mount, _volumes) case final volume?) _fitVolumeWindow(volume);
+  }
+
+  /// A disk image's window takes the size its layout asks (`.silica-window.toml` width and
+  /// height: the icon area), plus the sidebar, the toolbar and the status bar when shown.
+  void _fitVolumeWindow(SilicaVolume volume) {
+    final size = volumeWindowSize(
+      volume.window,
+      sidebar: _sidebarOpen ? _sidebarWidth : 0,
+      statusBar: _statusBar ? statusBarHeight : 0,
+    );
+    if (size == null) return;
+    final view = View.maybeOf(context)?.viewId ?? 0;
+    unawaited(SilicaWindow.setSize(size, viewId: view));
   }
 
   /// Ejects a volume from its sidebar row; the window leaves it first.
@@ -119,6 +134,7 @@ extension _Apps on _MustacheWindowState {
   Future<void> _installApps(
     List<String> bundles, {
     bool replace = false,
+    bool keepBoth = false,
   }) async {
     SilicaVolume? fromVolume;
     for (final source in bundles) {
@@ -133,6 +149,10 @@ extension _Apps on _MustacheWindowState {
         applicationsPath,
         quarantine: quarantine,
         replace: replace,
+        // "Keep Both": the copy takes the next free name (Name 2.app).
+        name: keepBoth
+            ? keepBothName(applicationsPath, displayName(source))
+            : null,
       );
       if (!mounted) return;
       final name = displayName(source);
@@ -143,6 +163,13 @@ extension _Apps on _MustacheWindowState {
             icon: _appIcon,
             title: l10n.installExists(name.replaceAll(RegExp(r'\.app$'), '')),
             buttons: [
+              AlertButton(
+                l10n.installKeepBoth,
+                onPressed: () {
+                  _closeAlert();
+                  unawaited(_installApps([source], keepBoth: true));
+                },
+              ),
               AlertButton(
                 l10n.installStop,
                 role: AlertRole.cancel,

@@ -393,7 +393,28 @@ class _MustacheWindowState extends State<MustacheWindow>
       env: widget.iconsEnv,
       mime: systemMime,
     );
+    _installed = {for (final app in installed) app.path: app};
+    // An app installed again or updated: its details are read again.
+    _appDetails.clear();
+    final flatpaks = flatpakItems(installed);
+    final changed =
+        flatpaks.length != _flatpaks.length ||
+        flatpaks.keys.any((k) => !_flatpaks.containsKey(k));
+    _flatpaks = flatpaks;
+    // The Applications view lists them: shown again when they changed.
+    if (changed && isApplicationsFolder(_history.current)) _load();
   }
+
+  /// The registry's apps by path (Get Info of a bundle: its permissions).
+  Map<String, SilicaInstalledApp> _installed = const {};
+
+  /// The Flatpak apps shown in the Applications view, by the path of their item.
+  Map<String, SilicaInstalledApp> _flatpaks = const {};
+
+  /// Get Info's details of apps, by path, once read (version, signature, access), and those
+  /// being read.
+  final Map<String, AppDetails> _appDetails = {};
+  final Set<String> _appDetailsLoading = {};
 
   final Map<String, String> _types = {};
 
@@ -730,6 +751,7 @@ class _MustacheWindowState extends State<MustacheWindow>
           result.entries,
           widget.iconsEnv ?? Platform.environment,
           showHidden: _showHidden,
+          flatpaks: _flatpaks.values,
         ),
         error: null,
       );
@@ -780,6 +802,10 @@ class _MustacheWindowState extends State<MustacheWindow>
     if (entry.isDirectory && widget.dialog == null && isAppBundle(entry.path)) {
       // An app bundle is one item: it opens the app (silica-launch checks and sandboxes it).
       unawaited(launchBundle(entry.path));
+    } else if (_flatpaks[entry.path] case final app?
+        when widget.dialog == null) {
+      // A Flatpak app of the Applications view: started by the registry (flatpak run).
+      unawaited(SilicaApps.open(app.id));
     } else if (entry.isDirectory) {
       _navigate(entry.path);
     } else if (entry.extension == 'sxv' && widget.dialog == null) {
@@ -1472,6 +1498,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                                 mime: entry.isDirectory ? null : _typeOf(entry),
                                 env: widget.iconsEnv,
                                 open: _infoOpen,
+                                app: _appDetailsOf(entry),
                                 openWith: entry.isDirectory
                                     ? null
                                     : _registry

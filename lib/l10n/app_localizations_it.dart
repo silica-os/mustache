@@ -1235,4 +1235,67 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get showPackageContents => 'Mostra contenuto pacchetto';
+
+  @override
+  String get installKeepBoth => 'Mantieni entrambe';
+
+  @override
+  String get kindApplication => 'Applicazione';
+
+  @override
+  String get kindFlatpakApp => 'Applicazione (Flatpak)';
+
+  @override
+  String get infoVersion => 'Versione';
+
+  @override
+  String get infoDeveloper => 'Sviluppatore';
+
+  @override
+  String get infoSignature => 'Firma';
+
+  @override
+  String get infoAccess => 'Accesso';
+
+  @override
+  String get signatureVerified => 'Sviluppatore identificato';
+
+  @override
+  String get signatureSelfSigned => 'Autofirmata';
+
+  @override
+  String get signatureUnsigned => 'Non firmata';
+
+  @override
+  String get signatureRevoked => 'Sviluppatore revocato';
+
+  @override
+  String get signatureTampered => 'Danneggiata o modificata';
+
+  @override
+  String get signatureSystem => 'Parte di Silica';
+
+  @override
+  String get signatureFlatpak => 'Installata con Flatpak';
+
+  @override
+  String get accessSystem => 'Tutto il computer (app di sistema)';
+
+  @override
+  String get accessNetwork => 'Rete';
+
+  @override
+  String get accessHome => 'Cartella Inizio';
+
+  @override
+  String get accessFolders => 'Alcune cartelle';
+
+  @override
+  String get accessDevices => 'Tutti i dispositivi';
+
+  @override
+  String get accessBackground => 'In background';
+
+  @override
+  String get accessNone => 'Solo i suoi file';
 }

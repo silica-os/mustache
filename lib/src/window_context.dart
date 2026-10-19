@@ -20,7 +20,13 @@ extension _Context on _MustacheWindowState {
   }
 
   /// The Kind column: the name of the type's family (R3.3).
-  String _kind(Entry entry) => kindLabel(entry, _typeOf(entry));
+  String _kind(Entry entry) {
+    // Apps are one item each: a bundle (a folder on disk) or a Flatpak app (its entry).
+    if (_flatpaks.containsKey(entry.path)) return l10n.kindFlatpakApp;
+    if (entry.isDirectory && isAppBundle(entry.path))
+      return l10n.kindApplication;
+    return kindLabel(entry, _typeOf(entry));
+  }
 
   /// Opens files with an app (or the default one of the first), with an alert when it cannot.
   Future<void> _openWith(List<Entry> files, [DesktopApp? app]) async {

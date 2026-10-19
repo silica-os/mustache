@@ -533,15 +533,21 @@ extension _Drag on _MustacheWindowState {
 
   /// Drop: move or copy (R9.1) into the destination.
   void _drop(DragPayload payload, String destination) {
+    // Flatpak apps of the Applications view are apps, not files: they go nowhere.
+    final paths = [
+      for (final p in payload.paths)
+        if (!_flatpaks.containsKey(p)) p,
+    ];
+    if (paths.isEmpty) return;
     // Apps dropped on Applications (or on its alias in a disk image) are installed.
-    if (_isInstall(payload.paths, destination)) {
-      unawaited(_installApps(payload.paths));
+    if (_isInstall(paths, destination)) {
+      unawaited(_installApps(paths));
       return;
     }
-    final copy = dropCopies(payload.paths, destination);
+    final copy = dropCopies(paths, destination);
     _startTransfer(
       copy ? TransferKind.copy : TransferKind.move,
-      payload.paths,
+      paths,
       destination,
     );
   }

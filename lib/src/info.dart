@@ -103,6 +103,60 @@ class StatDetails {
   }
 }
 
+/// What Get Info shows about an app (an app bundle, a Flatpak app of the Applications view):
+/// its version, developer, signature and what it may reach (mustache#32).
+@immutable
+class AppDetails {
+  const AppDetails({
+    this.version = '',
+    this.developer = '',
+    this.signature = '',
+    this.access = '',
+  });
+
+  final String version;
+  final String developer;
+
+  /// The signature status, as a sentence ("Identified developer", "Not signed"…).
+  final String signature;
+
+  /// What it may reach outside its sandbox ("Network, Home folder"), or that it has the whole
+  /// computer (a system app).
+  final String access;
+}
+
+/// The signature line of an app from Trust1's assessment info (`developer_status`, `reason`,
+/// `kind`).
+String signatureLabel(Map<String, Object?> info) {
+  if (info['kind'] == 'system') return l10n.signatureSystem;
+  if (info['reason'] == 'tampered') return l10n.signatureTampered;
+  return switch (info['developer_status']) {
+    'verified' => l10n.signatureVerified,
+    'self-signed' => l10n.signatureSelfSigned,
+    'revoked' => l10n.signatureRevoked,
+    _ => l10n.signatureUnsigned,
+  };
+}
+
+/// What an app may reach, from its `[permissions]` (the registry's `permissions`), in the
+/// sandbox a bundle runs in; a system app reaches everything.
+String accessLabel(Map<String, Object?> permissions, {bool system = false}) {
+  if (system) return l10n.accessSystem;
+  final filesystem = [
+    for (final f in (permissions['filesystem'] as List?) ?? const []) '$f',
+  ];
+  final parts = [
+    if (permissions['network'] == true) l10n.accessNetwork,
+    if (filesystem.any((f) => f == 'home' || f == 'home:ro'))
+      l10n.accessHome
+    else if (filesystem.isNotEmpty)
+      l10n.accessFolders,
+    if (permissions['devices'] == 'all') l10n.accessDevices,
+    if (permissions['background'] == true) l10n.accessBackground,
+  ];
+  return parts.isEmpty ? l10n.accessNone : parts.join(', ');
+}
+
 /// The privileges of a class (owner, group, others) as the menu shows them.
 enum Privilege { readWrite, readOnly, writeOnly, none }
 
@@ -156,9 +210,13 @@ class InfoPanel extends StatefulWidget {
     this.tags,
     this.onAddTag,
     this.onTagsChanged,
+    this.app,
   });
 
   final Entry entry;
+
+  /// The app's details when the item is an app (null otherwise, or while they load).
+  final AppDetails? app;
 
   /// Drawn inside the Mustache window, with its own frame, shadow and title bar; false when it
   /// is the content of a real window (Ossido draws the bar and the close button).
@@ -558,9 +616,19 @@ class _InfoPanelState extends State<InfoPanel> {
       case InfoSection.more:
         final mime = widget.mime;
         final image = mime != null && mime.startsWith('image/');
+        final app = widget.app;
         return Column(
           children: [
-            if (!entry.isDirectory) _row(l10n.infoContentType, mime ?? '--'),
+            if (app != null) ...[
+              if (app.version.isNotEmpty) _row(l10n.infoVersion, app.version),
+              if (app.developer.isNotEmpty)
+                _row(l10n.infoDeveloper, app.developer),
+              if (app.signature.isNotEmpty)
+                _row(l10n.infoSignature, app.signature),
+              if (app.access.isNotEmpty) _row(l10n.infoAccess, app.access),
+            ],
+            if (!entry.isDirectory && app == null)
+              _row(l10n.infoContentType, mime ?? '--'),
             if (image)
               _row(l10n.infoDimensions, switch (_dimensions) {
                 final d? => l10n.infoPixels(d.width, d.height),

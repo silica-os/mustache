@@ -169,4 +169,88 @@ void main() {
     );
     expect(isApplicationsFolder('/Applications'), isTrue);
   });
+
+  group('mustache#32', () {
+    SilicaInstalledApp flatpak(String id, String name, String file) =>
+        SilicaInstalledApp.fromProperties({
+          'id': id,
+          'name': name,
+          'kind': 'flatpak',
+          'path': file,
+          'desktop_file': file,
+          'version': '1.2',
+        })!;
+
+    test('Flatpak apps are items of Applications, named after the app', () {
+      final exports = Directory('${root.path}/exports/applications')
+        ..createSync(recursive: true);
+      final firefox = File(
+        '${exports.path}/org.mozilla.firefox.desktop',
+      )..writeAsStringSync('[Desktop Entry]\nType=Application\nName=Firefox\n');
+      File(
+        '${exports.path}/org.example.Mine.desktop',
+      ).writeAsStringSync('[Desktop Entry]\n');
+      bundle('home/Applications', 'Mine');
+      final apps = [
+        flatpak('org.mozilla.firefox', 'Firefox', firefox.path),
+        // A bundle has the name: the bundle stays the item.
+        flatpak(
+          'org.example.Mine',
+          'Mine',
+          '${exports.path}/org.example.Mine.desktop',
+        ),
+        // No entry file: not shown.
+        flatpak('org.example.Gone', 'Gone', '${exports.path}/gone.desktop'),
+      ];
+      final merged = mergeApplications(const [], {
+        'HOME': '${root.path}/home',
+      }, flatpaks: apps);
+      expect(merged.map((e) => e.name), ['Mine.app', 'Firefox']);
+      final item = merged.last;
+      expect((item.path, item.isDirectory), (firefox.path, false));
+      expect(flatpakItems(apps).keys, [
+        firefox.path,
+        '${exports.path}/org.example.Mine.desktop',
+      ]);
+    });
+
+    test('Keep Both takes the next free name', () {
+      bundle('apps', 'Hello');
+      bundle('apps', 'Hello 2');
+      expect(keepBothName('${root.path}/apps', 'Hello.app'), 'Hello 3.app');
+      expect(keepBothName('${root.path}/apps', 'Other.app'), 'Other 2.app');
+    });
+
+    test('Keep Both installs the copy beside the other one', () async {
+      final source = bundle('volume', 'Hello');
+      bundle('apps', 'Hello');
+      final target = '${root.path}/apps';
+      final (installed, error) = await installBundle(
+        source.path,
+        target,
+        name: keepBothName(target, 'Hello.app'),
+      );
+      expect(error, isNull);
+      expect(installed, '$target/Hello 2.app');
+      expect(isAppBundle('$target/Hello 2.app'), isTrue);
+      expect(isAppBundle('$target/Hello.app'), isTrue);
+    });
+
+    test('a bundle\'s version, and the disk image window\'s size', () {
+      final app = bundle('apps', 'Versioned');
+      File(
+        '${app.path}/Contents/Info.toml',
+      ).writeAsStringSync('format = 1\nversion = "2.4.1"\n');
+      expect(bundleVersion(app.path), '2.4.1');
+      expect(bundleVersion('${root.path}/none.app'), isNull);
+      const layout = SilicaVolumeWindow(width: 540, height: 380);
+      final size = volumeWindowSize(layout, sidebar: 180, statusBar: 28)!;
+      expect(size.width, 720);
+      expect(size.height, 380 + AmalfiToolbarMetrics.toolbarHeight + 28);
+      expect(
+        volumeWindowSize(const SilicaVolumeWindow(width: 0, height: 0)),
+        isNull,
+      );
+    });
+  });
 }

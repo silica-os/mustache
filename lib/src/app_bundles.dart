@@ -5,7 +5,7 @@
 // when the folder is not writable).
 
 import 'dart:io';
-import 'dart:ui' show Offset;
+import 'dart:ui' show Offset, Size;
 
 import 'package:silica_ui/silica_ui.dart';
 
@@ -65,6 +65,7 @@ List<Entry> mergeApplications(
   List<Entry> own,
   Map<String, String> env, {
   bool showHidden = false,
+  Iterable<SilicaInstalledApp> flatpaks = const [],
 }) {
   final names = {for (final e in own) e.name};
   final out = [...own];
@@ -74,7 +75,58 @@ List<Entry> mergeApplications(
       if (names.add(e.name)) out.add(e);
     }
   }
+  // The Flatpak apps, as items named after the app (mustache#32), unless a bundle has the name.
+  for (final app in flatpaks) {
+    final entry = flatpakEntry(app);
+    if (entry != null &&
+        names.add('${entry.name}.app') &&
+        names.add(entry.name)) {
+      out.add(entry);
+    }
+  }
   return out;
+}
+
+/// The item of a Flatpak app in the Applications view: its exported desktop entry (the icon
+/// comes from it), named after the app. Null when the registry gave no entry file.
+Entry? flatpakEntry(SilicaInstalledApp app) {
+  final file = app.desktopFile.isNotEmpty ? app.desktopFile : app.path;
+  if (app.kind != SilicaInstalledAppKind.flatpak ||
+      !file.endsWith('.desktop')) {
+    return null;
+  }
+  final stat = FileStat.statSync(file);
+  if (stat.type == FileSystemEntityType.notFound) return null;
+  return Entry(
+    name: app.name,
+    path: file,
+    isDirectory: false,
+    size: 0,
+    modified: stat.modified,
+  );
+}
+
+/// The Flatpak apps of the registry, by the path of their item ([flatpakEntry]).
+Map<String, SilicaInstalledApp> flatpakItems(
+  Iterable<SilicaInstalledApp> apps,
+) => {
+  for (final app in apps)
+    if (flatpakEntry(app) case final entry?) entry.path: app,
+};
+
+/// A free name for a copy of `name` in `folder` ("Keep Both"): `Name 2.app`, `Name 3.app`…
+String keepBothName(String folder, String name) {
+  final dot = name.endsWith('.app') ? name.length - 4 : name.length;
+  final stem = name.substring(0, dot);
+  final suffix = name.substring(dot);
+  bool taken(String n) =>
+      FileSystemEntity.typeSync('$folder/$n', followLinks: false) !=
+      FileSystemEntityType.notFound;
+  for (var n = 2; n < 10000; n++) {
+    final candidate = '$stem $n$suffix';
+    if (!taken(candidate)) return candidate;
+  }
+  return '$stem ${DateTime.now().millisecondsSinceEpoch}$suffix';
 }
 
 /// The folder where disk images are mounted (`$XDG_RUNTIME_DIR/silica-volumes`).
@@ -116,6 +168,21 @@ Map<String, Offset> volumePositions(
   return out;
 }
 
+/// The window size for a disk image's layout: its content (width × height, in pt) with the
+/// sidebar beside it and the toolbar and the status bar above and below; null when the layout
+/// gives no size.
+Size? volumeWindowSize(
+  SilicaVolumeWindow layout, {
+  double sidebar = 0,
+  double statusBar = 0,
+}) {
+  if (layout.width <= 0 || layout.height <= 0) return null;
+  return Size(
+    layout.width + sidebar,
+    layout.height + AmalfiToolbarMetrics.toolbarHeight + statusBar,
+  );
+}
+
 /// Starts the app of a bundle (through silica-launch: its trust check and sandbox).
 Future<void> launchBundle(String path, {List<String> files = const []}) =>
     startDetached('silica-launch', [path, ...files]);
@@ -140,8 +207,9 @@ Future<(String?, InstallError?)> installBundle(
   String target, {
   String? quarantine,
   bool replace = false,
+  String? name,
 }) async {
-  final name = displayName(source);
+  name ??= displayName(source);
   final destination = '$target/$name';
   final exists =
       FileSystemEntity.typeSync(destination, followLinks: false) !=
@@ -244,6 +312,19 @@ String? bundleId(String path) {
   try {
     for (final line in File('$path/Contents/Info.toml').readAsLinesSync()) {
       final match = RegExp(r'^\s*id\s*=\s*"([^"]+)"').firstMatch(line);
+      if (match != null) return match.group(1);
+    }
+  } on FileSystemException {
+    return null;
+  }
+  return null;
+}
+
+/// The version in a bundle's `Info.toml` (`version = "…"`), or null.
+String? bundleVersion(String path) {
+  try {
+    for (final line in File('$path/Contents/Info.toml').readAsLinesSync()) {
+      final match = RegExp(r'^\s*version\s*=\s*"([^"]+)"').firstMatch(line);
       if (match != null) return match.group(1);
     }
   } on FileSystemException {

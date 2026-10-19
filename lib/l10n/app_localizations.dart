@@ -2203,6 +2203,132 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show Package Contents'**
   String get showPackageContents;
+
+  /// Button: install the app next to the one already there, under a new name
+  ///
+  /// In en, this message translates to:
+  /// **'Keep Both'**
+  String get installKeepBoth;
+
+  /// Kind of an app bundle
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get kindApplication;
+
+  /// Kind of a Flatpak app in the Applications view
+  ///
+  /// In en, this message translates to:
+  /// **'Application (Flatpak)'**
+  String get kindFlatpakApp;
+
+  /// Get Info row: the app's version
+  ///
+  /// In en, this message translates to:
+  /// **'Version'**
+  String get infoVersion;
+
+  /// Get Info row: who made the app
+  ///
+  /// In en, this message translates to:
+  /// **'Developer'**
+  String get infoDeveloper;
+
+  /// Get Info row: the app's signature status
+  ///
+  /// In en, this message translates to:
+  /// **'Signature'**
+  String get infoSignature;
+
+  /// Get Info row: what the app may reach
+  ///
+  /// In en, this message translates to:
+  /// **'Access'**
+  String get infoAccess;
+
+  /// Signature: signed by a developer the Silica CA knows
+  ///
+  /// In en, this message translates to:
+  /// **'Identified developer'**
+  String get signatureVerified;
+
+  /// Signature: signed by an unknown developer
+  ///
+  /// In en, this message translates to:
+  /// **'Self-signed'**
+  String get signatureSelfSigned;
+
+  /// Signature: no signature
+  ///
+  /// In en, this message translates to:
+  /// **'Not signed'**
+  String get signatureUnsigned;
+
+  /// Signature: the developer's key was revoked
+  ///
+  /// In en, this message translates to:
+  /// **'Revoked developer'**
+  String get signatureRevoked;
+
+  /// Signature: the files do not match the signature
+  ///
+  /// In en, this message translates to:
+  /// **'Damaged or modified'**
+  String get signatureTampered;
+
+  /// Signature: a system app
+  ///
+  /// In en, this message translates to:
+  /// **'Part of Silica'**
+  String get signatureSystem;
+
+  /// Signature: a Flatpak app (verified by Flatpak)
+  ///
+  /// In en, this message translates to:
+  /// **'Installed with Flatpak'**
+  String get signatureFlatpak;
+
+  /// Access: a system app runs without a sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'The whole computer (system app)'**
+  String get accessSystem;
+
+  /// Access: network
+  ///
+  /// In en, this message translates to:
+  /// **'Network'**
+  String get accessNetwork;
+
+  /// Access: the home folder
+  ///
+  /// In en, this message translates to:
+  /// **'Home folder'**
+  String get accessHome;
+
+  /// Access: some folders
+  ///
+  /// In en, this message translates to:
+  /// **'Some folders'**
+  String get accessFolders;
+
+  /// Access: every device
+  ///
+  /// In en, this message translates to:
+  /// **'All devices'**
+  String get accessDevices;
+
+  /// Access: may run without windows
+  ///
+  /// In en, this message translates to:
+  /// **'Background'**
+  String get accessBackground;
+
+  /// Access: nothing outside its sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Its own files only'**
+  String get accessNone;
 }
 
 class _AppLocalizationsDelegate

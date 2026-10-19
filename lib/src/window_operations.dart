@@ -46,6 +46,8 @@ extension _Operations on _MustacheWindowState {
 
   void _startRename(String path) {
     _slowClick?.cancel();
+    // A Flatpak app's item is the app, not a file of the user's: it keeps its name.
+    if (_flatpaks.containsKey(path)) return;
     _update(() {
       _select([path]);
       _renaming = path;
@@ -237,6 +239,32 @@ extension _Operations on _MustacheWindowState {
     if (items.isEmpty) return;
     if (_trash.contains(_history.current)) {
       _restore(items);
+      return;
+    }
+    // Flatpak apps of the Applications view are uninstalled (flatpak uninstall through the
+    // registry; the system installation asks for the password), not moved (mustache#32).
+    final flatpaks = [
+      for (final entry in items)
+        if (_flatpaks[entry.path] case final app?) app,
+    ];
+    if (flatpaks.isNotEmpty) {
+      final env = widget.iconsEnv ?? Platform.environment;
+      for (final app in flatpaks) {
+        if (appRunning(app.id, env)) {
+          _showError(l10n.appIsRunning(app.name));
+          return;
+        }
+      }
+      unawaited(() async {
+        for (final app in flatpaks) {
+          if (!await SilicaApps.uninstall(app.id)) {
+            if (mounted) _showError(l10n.cantTrash, app.name);
+            return;
+          }
+        }
+        if (mounted) unawaited(playUiSound(UiSound.trashMove));
+        await _loadApps();
+      }());
       return;
     }
     // Apps (silica-os docs/app-bundles.md): the system's stay; an open one is quit first;

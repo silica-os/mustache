@@ -109,6 +109,12 @@ extension _Context on _MustacheWindowState {
         },
       ),
       if (files.length == items.length) _openWithMenu(files),
+      // An app bundle opens the app; its folder is reached here.
+      if (single != null && single.isDirectory && isAppBundle(single.path))
+        AmalfiMenuAction(
+          l10n.showPackageContents,
+          onSelected: () => _navigate(single.path),
+        ),
       const AmalfiMenuDivider(),
       AmalfiMenuAction(
         inTrash ? l10n.restore : l10n.moveToTrash,

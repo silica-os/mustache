@@ -239,6 +239,41 @@ extension _Operations on _MustacheWindowState {
       _restore(items);
       return;
     }
+    // Apps (silica-os docs/app-bundles.md): the system's stay; an open one is quit first;
+    // in /Applications without write permission the helper removes it (polkit).
+    final env = widget.iconsEnv ?? Platform.environment;
+    for (final entry in items) {
+      if (!entry.isDirectory || !isAppBundle(entry.path)) continue;
+      final name = entry.name.replaceAll(RegExp(r'\.app$'), '');
+      if (isSystemApp(entry.path)) {
+        _showError(l10n.appIsSystem(name));
+        return;
+      }
+      if (bundleId(entry.path) case final id? when appRunning(id, env)) {
+        _showError(l10n.appIsRunning(name));
+        return;
+      }
+    }
+    final privileged = [
+      for (final entry in items)
+        if (parentOf(entry.path) case final parent?
+            when isAppBundle(entry.path) &&
+                isApplicationsFolder(parent) &&
+                !folderWritable(parent))
+          entry,
+    ];
+    if (privileged.isNotEmpty) {
+      unawaited(() async {
+        for (final entry in privileged) {
+          if (!await removeFromApplications(entry.path)) {
+            if (mounted) _showError(l10n.cantTrash, entry.name);
+            return;
+          }
+        }
+        if (mounted) _load();
+      }());
+      return;
+    }
     final last = _entries.indexWhere((e) => e.path == items.last.path);
     final moves = <(String, String)>[];
     String? error;

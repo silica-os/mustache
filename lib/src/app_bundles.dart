@@ -197,3 +197,44 @@ Future<String?> _helper(List<String> args) async {
     return null;
   }
 }
+
+/// Whether `path` is one of the system's apps (read-only, part of the image).
+bool isSystemApp(String path) =>
+    path.startsWith('/usr/') ||
+    path.startsWith('/var/lib/silica-dev/Applications/');
+
+/// The id in a bundle's `Info.toml` (`id = "…"`), or null.
+String? bundleId(String path) {
+  try {
+    for (final line in File('$path/Contents/Info.toml').readAsLinesSync()) {
+      final match = RegExp(r'^\s*id\s*=\s*"([^"]+)"').firstMatch(line);
+      if (match != null) return match.group(1);
+    }
+  } on FileSystemException {
+    return null;
+  }
+  return null;
+}
+
+/// Whether the app `id` runs now: the session's app registry has a socket of a live process
+/// (`$XDG_RUNTIME_DIR/silica-apps/<id>.<pid>.sock`).
+bool appRunning(String id, Map<String, String> env) {
+  final runtime = env['XDG_RUNTIME_DIR'];
+  if (runtime == null || runtime.isEmpty) return false;
+  try {
+    for (final e in Directory('$runtime/silica-apps').listSync()) {
+      final name = e.path.split('/').last;
+      if (!name.startsWith('$id.') || !name.endsWith('.sock')) continue;
+      final pid = name.substring(id.length + 1, name.length - '.sock'.length);
+      if (int.tryParse(pid) != null && Directory('/proc/$pid').existsSync()) {
+        return true;
+      }
+    }
+  } on FileSystemException {
+    return false;
+  }
+  return false;
+}
+
+/// Whether the folder `path` can be written by this user.
+bool folderWritable(String path) => _writable(path);

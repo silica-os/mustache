@@ -115,4 +115,21 @@ void main() {
       ]);
     },
   );
+
+  test('system apps, ids and running apps', () {
+    final app = bundle('a', 'Hello');
+    File('${app.path}/Contents/Info.toml').writeAsStringSync(
+      'format = 1\nid = "dev.example.Hello"\nname = "Hello"\n',
+    );
+    expect(bundleId(app.path), 'dev.example.Hello');
+    expect(isSystemApp('/usr/Applications/Calculator.app'), isTrue);
+    expect(isSystemApp('/Applications/Hello.app'), isFalse);
+    final runtime = Directory('${root.path}/run/silica-apps')
+      ..createSync(recursive: true);
+    final env = {'XDG_RUNTIME_DIR': '${root.path}/run'};
+    expect(appRunning('dev.example.Hello', env), isFalse);
+    File('${runtime.path}/dev.example.Hello.$pid.sock').writeAsStringSync('');
+    expect(appRunning('dev.example.Hello', env), isTrue);
+    expect(appRunning('dev.example', env), isFalse);
+  });
 }

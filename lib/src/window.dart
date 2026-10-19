@@ -25,6 +25,7 @@ import 'l10n.dart';
 import 'model.dart';
 import 'settings.dart';
 import 'alerts.dart';
+import 'app_bundles.dart';
 import 'apps.dart';
 import 'column_view.dart';
 import 'dialog.dart';
@@ -62,6 +63,7 @@ import 'recents.dart';
 import 'tags.dart';
 import 'toolbar.dart';
 
+part 'window_apps.dart';
 part 'window_arrange.dart';
 part 'window_share.dart';
 part 'window_sheets.dart';
@@ -378,6 +380,10 @@ class _MustacheWindowState extends State<MustacheWindow>
   /// again.
   StreamSubscription<SilicaAppsEvent>? _appEvents;
 
+  /// The attached disk images (Volumes1) and their changes.
+  List<SilicaVolume> _volumes = const [];
+  StreamSubscription<String>? _volumeEvents;
+
   /// Replaces the file-based registry with the session's (bundles and AppImages included).
   Future<void> _loadApps() async {
     final installed = await SilicaApps.list();
@@ -571,6 +577,10 @@ class _MustacheWindowState extends State<MustacheWindow>
       unawaited(_loadApps());
       _appEvents = SilicaApps.events().listen((_) => unawaited(_loadApps()));
     }
+    unawaited(_loadVolumes());
+    _volumeEvents = SilicaVolumes.changes().listen(
+      (_) => unawaited(_loadVolumes()),
+    );
     // The app icons of Open With, composed ahead for the shell's menus (mustache#28).
     // (Not for an Open or Save panel: it opens fast and offers no Open With.)
     if (widget.dialog == null) {
@@ -595,6 +605,7 @@ class _MustacheWindowState extends State<MustacheWindow>
     _lifecycle.dispose();
     _externalDrags?.cancel();
     _appEvents?.cancel();
+    _volumeEvents?.cancel();
     _focus.dispose();
     _customizeFocus.dispose();
     _listScrollX.dispose();
@@ -711,7 +722,18 @@ class _MustacheWindowState extends State<MustacheWindow>
     }
     _unwatchStyles(keep: _history.current);
     _watchStyles(_history.current);
-    final result = listDirectory(_history.current, showHidden: _showHidden);
+    var result = listDirectory(_history.current, showHidden: _showHidden);
+    // The Applications view: /Applications with the user's and the system's apps.
+    if (isApplicationsFolder(_history.current) && result.error == null) {
+      result = (
+        entries: mergeApplications(
+          result.entries,
+          widget.iconsEnv ?? Platform.environment,
+          showHidden: _showHidden,
+        ),
+        error: null,
+      );
+    }
     if (_statusBar) _free = freeBytes(_history.current);
     widget.onLocation?.call(_history.current);
     setState(() {
@@ -755,8 +777,13 @@ class _MustacheWindowState extends State<MustacheWindow>
 
   void _openEntry(Entry entry) {
     _slowClick?.cancel();
-    if (entry.isDirectory) {
+    if (entry.isDirectory && widget.dialog == null && isAppBundle(entry.path)) {
+      // An app bundle is one item: it opens the app (silica-launch checks and sandboxes it).
+      unawaited(launchBundle(entry.path));
+    } else if (entry.isDirectory) {
       _navigate(entry.path);
+    } else if (entry.extension == 'sxv' && widget.dialog == null) {
+      unawaited(_openDiskImage(entry.path));
     } else if (entry.extension == savedSearchExtension &&
         widget.dialog == null &&
         SavedSearch.read(entry.path) != null) {
@@ -1226,6 +1253,10 @@ class _MustacheWindowState extends State<MustacheWindow>
                                   topInset: AmalfiToolbarMetrics.toolbarHeight,
                                   sections: [
                                     SidebarSection(l10n.sidebarPinned, [
+                                      if (_sidebarShows(
+                                        PlaceKind.applications.name,
+                                      ))
+                                        ?_applicationsPlace,
                                       for (final place in widget.places)
                                         if (place.kind != PlaceKind.home &&
                                             _sidebarShows(place.kind.name))
@@ -1239,6 +1270,8 @@ class _MustacheWindowState extends State<MustacheWindow>
                                           if (place.kind == PlaceKind.home &&
                                               _sidebarShows(place.kind.name))
                                             place,
+                                        // Attached disk images, with their eject button.
+                                        ..._volumePlaces,
                                         if (_sidebarShows(PlaceKind.trash.name))
                                           widget.trash,
                                       ],
@@ -1269,6 +1302,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                                     _ => _navigate(place.path),
                                   },
                                   onDrop: _drop,
+                                  onEject: (place) => unawaited(_eject(place)),
                                 ),
                               ),
                               Positioned(
@@ -1876,9 +1910,21 @@ class _MustacheWindowState extends State<MustacheWindow>
 
   Widget _icons() {
     if (_error != null) return _listView();
-    final positions = _freePositions;
+    // A disk image's window: the icons where its layout puts them, at its size, on its
+    // background (`.silica-window.toml`, read by the daemon).
+    final volume = _volumeRoot;
+    final layout = volume?.window;
+    final side = layout == null ? _iconSide : layout.iconSize;
+    final positions = layout == null || layout.items.isEmpty
+        ? _freePositions
+        : {
+            for (final e in _entries)
+              if (layout.items.where((i) => i.name == e.name).firstOrNull
+                  case final item?)
+                e.path: Offset(item.x, item.y - side / 2),
+          };
     final view = IconView(
-      side: _iconSide,
+      side: side,
       positions: positions,
       moveDuration: _moveDuration,
       entries: _entries,
@@ -1905,7 +1951,26 @@ class _MustacheWindowState extends State<MustacheWindow>
         _anchor = null;
       }),
     );
-    return view;
+    final background = layout?.background ?? '';
+    if (background.isEmpty) return view;
+    return Stack(
+      children: [
+        Positioned(
+          left: 0,
+          top: 0,
+          width: layout!.width,
+          height: layout.height,
+          child: IgnorePointer(
+            child: Image.file(
+              File(background),
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => const SizedBox(),
+            ),
+          ),
+        ),
+        Positioned.fill(child: view),
+      ],
+    );
   }
 }
 

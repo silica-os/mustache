@@ -1156,4 +1156,83 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get tagsShowAll => 'Mostra tutti…';
+
+  @override
+  String get sidebarApplications => 'Applicazioni';
+
+  @override
+  String get ejectButton => 'Espelli';
+
+  @override
+  String volumeBusy(String name) {
+    return 'Impossibile espellere “$name” perché è in uso.';
+  }
+
+  @override
+  String volumeBadSignature(String name) {
+    return 'Impossibile aprire “$name”: l’immagine disco è danneggiata o è stata modificata.';
+  }
+
+  @override
+  String volumeUnsigned(String name) {
+    return 'Impossibile aprire “$name” perché non è firmata dal suo sviluppatore.';
+  }
+
+  @override
+  String volumeRevoked(String name) {
+    return '“$name” proviene da uno sviluppatore la cui chiave è stata revocata.';
+  }
+
+  @override
+  String volumeFailed(String name) {
+    return 'Impossibile aprire “$name”.';
+  }
+
+  @override
+  String licenseTitle(String name) {
+    return 'Per usare “$name” devi accettarne la licenza.';
+  }
+
+  @override
+  String get licenseAgree => 'Accetta';
+
+  @override
+  String get licenseDisagree => 'Rifiuta';
+
+  @override
+  String installExists(String name) {
+    return 'In Applicazioni esiste già un’app chiamata “$name”. Vuoi sostituirla?';
+  }
+
+  @override
+  String get installReplace => 'Sostituisci';
+
+  @override
+  String get installStop => 'Interrompi';
+
+  @override
+  String installFailed(String name) {
+    return 'Impossibile copiare “$name” in Applicazioni.';
+  }
+
+  @override
+  String installEject(String name) {
+    return 'Espellere “$name” e spostare l’immagine disco nel Cestino?';
+  }
+
+  @override
+  String get installKeep => 'Mantieni';
+
+  @override
+  String appIsSystem(String name) {
+    return '“$name” fa parte di Silica e non può essere spostata nel Cestino.';
+  }
+
+  @override
+  String appIsRunning(String name) {
+    return '“$name” è aperta. Chiudila prima di spostarla nel Cestino.';
+  }
+
+  @override
+  String get showPackageContents => 'Mostra contenuto pacchetto';
 }

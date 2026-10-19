@@ -9,6 +9,7 @@ import 'package:mustache/src/model.dart';
 import 'package:mustache/src/settings.dart';
 import 'package:mustache/src/sidebar.dart';
 import 'package:mustache/src/window.dart';
+import 'package:silica_ui/silica_ui.dart' show SilicaDBus;
 
 import 'kit.dart';
 
@@ -50,6 +51,62 @@ void main() {
     );
     return used;
   }
+
+  testWidgets('an attached disk image is a row with an eject button', (
+    tester,
+  ) async {
+    final detached = <String>[];
+    var attached = true;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SilicaDBus.channel,
+      (call) async {
+        if (call.method != 'call') return null;
+        final args = call.arguments as Map;
+        if (args['interface'] != 'dev.frascella.Silica.Volumes1') {
+          throw PlatformException(
+            code: 'org.freedesktop.DBus.Error.ServiceUnknown',
+          );
+        }
+        switch (args['method']) {
+          case 'List':
+            return [
+              [
+                if (attached)
+                  [
+                    '${root.path}/run/silica-volumes/Hello',
+                    '${root.path}/Download/Hello.sxv',
+                    {'name': 'Hello', 'signature': 'valid'},
+                  ],
+              ],
+            ];
+          case 'Detach':
+            detached.add((args['args'] as List).first as String);
+            attached = false;
+            return const [];
+        }
+        return const [];
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SilicaDBus.channel,
+        null,
+      ),
+    );
+    await pump(tester);
+    await tester.pump();
+    await tester.pump();
+    expect(inSidebar('Hello'), findsOneWidget);
+    final eject = find.byKey(
+      ValueKey('eject ${root.path}/run/silica-volumes/Hello'),
+    );
+    expect(eject, findsOneWidget);
+    await tester.tap(eject);
+    await tester.pump();
+    await tester.pump();
+    expect(detached, ['${root.path}/run/silica-volumes/Hello']);
+    expect(inSidebar('Hello'), findsNothing);
+  });
 
   testWidgets('rows, headers and the selection follow the kit Sidebar master', (
     tester,

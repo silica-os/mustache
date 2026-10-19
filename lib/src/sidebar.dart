@@ -95,6 +95,8 @@ String symbolFor(PlaceKind kind) => switch (kind) {
   PlaceKind.trash => 'trash',
   PlaceKind.tag => '',
   PlaceKind.search => 'search',
+  PlaceKind.applications => 'square-grid-2x2',
+  PlaceKind.volume => 'drive',
 };
 
 /// The tag dot of a sidebar row: 12 pt, the Amalfi palette.
@@ -107,6 +109,7 @@ class Sidebar extends StatefulWidget {
     required this.current,
     required this.onSelect,
     this.onDrop,
+    this.onEject,
     this.topInset = 0,
   });
 
@@ -116,6 +119,9 @@ class Sidebar extends StatefulWidget {
 
   /// Dropping dragged items on a place (R2.8): the row turns accent colored.
   final void Function(DragPayload payload, String destination)? onDrop;
+
+  /// The eject button of a volume row (a mounted disk image).
+  final ValueChanged<Place>? onEject;
 
   final List<SidebarSection> sections;
 
@@ -281,7 +287,10 @@ class _SidebarState extends State<Sidebar> with TickerProviderStateMixin {
         ? l10n.trash
         : place.label;
     final key = ValueKey('place ${place.path}');
-    if (place.kind != PlaceKind.tag && !drop) {
+    final eject = widget.onEject;
+    if (place.kind != PlaceKind.tag &&
+        !drop &&
+        (place.kind != PlaceKind.volume || eject == null)) {
       return AmalfiSidebarRow(
         key: key,
         label: label,
@@ -313,8 +322,23 @@ class _SidebarState extends State<Sidebar> with TickerProviderStateMixin {
           : AmalfiSymbol(
               symbolFor(place.kind),
               size: AmalfiSidebarMetrics.icon,
-              color: AmalfiTheme.of(context).colors.textOnAccent,
+              color: drop
+                  ? AmalfiTheme.of(context).colors.textOnAccent
+                  : AmalfiTheme.of(context).colors.textSecondary,
             ),
+      trailing: place.kind == PlaceKind.volume && eject != null
+          ? GestureDetector(
+              key: ValueKey('eject ${place.path}'),
+              behavior: HitTestBehavior.opaque,
+              onTap: () => eject(place),
+              // PROVISIONAL(amalfi-gatekeeper): the eject button's size until the master.
+              child: AmalfiSymbol(
+                'eject',
+                size: 14,
+                color: AmalfiTheme.of(context).colors.textSecondary,
+              ),
+            )
+          : null,
       onTap: () => widget.onSelect(place),
     );
   }
@@ -330,10 +354,14 @@ class _SidebarRow extends StatefulWidget {
     required this.selected,
     required this.drop,
     required this.onTap,
+    this.trailing,
   });
 
   final String label;
   final Widget leading;
+
+  /// After the label (the eject button of a volume).
+  final Widget? trailing;
   final bool selected;
   final bool drop;
   final VoidCallback onTap;
@@ -402,6 +430,10 @@ class _SidebarRowState extends State<_SidebarRow> {
                       style: style,
                     ),
                   ),
+                  if (widget.trailing case final trailing?) ...[
+                    const SizedBox(width: AmalfiSidebarMetrics.iconGap),
+                    trailing,
+                  ],
                 ],
               ),
             ),

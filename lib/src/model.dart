@@ -362,6 +362,12 @@ enum PlaceKind {
 
   /// A saved search (path `search:<file>`): runs it.
   search,
+
+  /// The Applications view (`/Applications` merged with `~/Applications` and the system's apps).
+  applications,
+
+  /// An attached disk image (its mount point), with an eject button.
+  volume,
 }
 
 /// The name of the virtual view of the recently used files, kept where a tag name is (it

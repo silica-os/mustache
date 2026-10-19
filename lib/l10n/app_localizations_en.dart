@@ -1155,4 +1155,83 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagsShowAll => 'Show All…';
+
+  @override
+  String get sidebarApplications => 'Applications';
+
+  @override
+  String get ejectButton => 'Eject';
+
+  @override
+  String volumeBusy(String name) {
+    return '“$name” could not be ejected because it is in use.';
+  }
+
+  @override
+  String volumeBadSignature(String name) {
+    return '“$name” cannot be opened: the disk image is damaged or was modified.';
+  }
+
+  @override
+  String volumeUnsigned(String name) {
+    return '“$name” cannot be opened because it is not signed by its developer.';
+  }
+
+  @override
+  String volumeRevoked(String name) {
+    return '“$name” comes from a developer whose key was revoked.';
+  }
+
+  @override
+  String volumeFailed(String name) {
+    return '“$name” could not be opened.';
+  }
+
+  @override
+  String licenseTitle(String name) {
+    return 'To use “$name”, you must agree to its license.';
+  }
+
+  @override
+  String get licenseAgree => 'Agree';
+
+  @override
+  String get licenseDisagree => 'Disagree';
+
+  @override
+  String installExists(String name) {
+    return 'An app named “$name” already exists in Applications. Do you want to replace it?';
+  }
+
+  @override
+  String get installReplace => 'Replace';
+
+  @override
+  String get installStop => 'Stop';
+
+  @override
+  String installFailed(String name) {
+    return '“$name” could not be copied to Applications.';
+  }
+
+  @override
+  String installEject(String name) {
+    return 'Eject “$name” and move the disk image to the Trash?';
+  }
+
+  @override
+  String get installKeep => 'Keep';
+
+  @override
+  String appIsSystem(String name) {
+    return '“$name” is part of Silica and cannot be moved to the Trash.';
+  }
+
+  @override
+  String appIsRunning(String name) {
+    return '“$name” is open. Quit it before moving it to the Trash.';
+  }
+
+  @override
+  String get showPackageContents => 'Show Package Contents';
 }

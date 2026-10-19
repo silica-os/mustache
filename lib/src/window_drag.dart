@@ -533,6 +533,11 @@ extension _Drag on _MustacheWindowState {
 
   /// Drop: move or copy (R9.1) into the destination.
   void _drop(DragPayload payload, String destination) {
+    // Apps dropped on Applications (or on its alias in a disk image) are installed.
+    if (_isInstall(payload.paths, destination)) {
+      unawaited(_installApps(payload.paths));
+      return;
+    }
     final copy = dropCopies(payload.paths, destination);
     _startTransfer(
       copy ? TransferKind.copy : TransferKind.move,

@@ -2089,6 +2089,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Show All…'**
   String get tagsShowAll;
+
+  /// Sidebar: the Applications view
+  ///
+  /// In en, this message translates to:
+  /// **'Applications'**
+  String get sidebarApplications;
+
+  /// Sidebar: the eject button of a disk image
+  ///
+  /// In en, this message translates to:
+  /// **'Eject'**
+  String get ejectButton;
+
+  /// Alert: a disk image cannot be ejected
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” could not be ejected because it is in use.'**
+  String volumeBusy(String name);
+
+  /// Alert: a disk image whose signature fails
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” cannot be opened: the disk image is damaged or was modified.'**
+  String volumeBadSignature(String name);
+
+  /// Alert: an unsigned disk image
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” cannot be opened because it is not signed by its developer.'**
+  String volumeUnsigned(String name);
+
+  /// Alert: a disk image of a revoked developer
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” comes from a developer whose key was revoked.'**
+  String volumeRevoked(String name);
+
+  /// Alert: a disk image that does not attach
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” could not be opened.'**
+  String volumeFailed(String name);
+
+  /// Alert: the license of a disk image
+  ///
+  /// In en, this message translates to:
+  /// **'To use “{name}”, you must agree to its license.'**
+  String licenseTitle(String name);
+
+  /// Button: accept a license
+  ///
+  /// In en, this message translates to:
+  /// **'Agree'**
+  String get licenseAgree;
+
+  /// Button: refuse a license
+  ///
+  /// In en, this message translates to:
+  /// **'Disagree'**
+  String get licenseDisagree;
+
+  /// Alert: the app is already installed
+  ///
+  /// In en, this message translates to:
+  /// **'An app named “{name}” already exists in Applications. Do you want to replace it?'**
+  String installExists(String name);
+
+  /// Button: replace the installed app
+  ///
+  /// In en, this message translates to:
+  /// **'Replace'**
+  String get installReplace;
+
+  /// Button: do not install
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get installStop;
+
+  /// Alert: installing an app failed
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” could not be copied to Applications.'**
+  String installFailed(String name);
+
+  /// Alert after installing an app from a disk image
+  ///
+  /// In en, this message translates to:
+  /// **'Eject “{name}” and move the disk image to the Trash?'**
+  String installEject(String name);
+
+  /// Button: keep the disk image
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get installKeep;
+
+  /// Alert: a system app cannot be removed
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is part of Silica and cannot be moved to the Trash.'**
+  String appIsSystem(String name);
+
+  /// Alert: an app that runs cannot be removed
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is open. Quit it before moving it to the Trash.'**
+  String appIsRunning(String name);
+
+  /// Context menu of an app bundle
+  ///
+  /// In en, this message translates to:
+  /// **'Show Package Contents'**
+  String get showPackageContents;
 }
 
 class _AppLocalizationsDelegate

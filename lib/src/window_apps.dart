@@ -82,20 +82,71 @@ extension _Apps on _MustacheWindowState {
     await _loadVolumes();
     if (!mounted) return;
     _navigate(mount);
-    if (volumeOf(mount, _volumes) case final volume?) _fitVolumeWindow(volume);
+    // A dialog stays a dialog: only a browser window becomes the image's window.
+    if (widget.dialog == null && volumeOf(mount, _volumes) != null) {
+      _setVolumeWindow(true);
+    }
   }
 
-  /// A disk image's window takes the size its layout asks (`.silica-window.toml` width and
-  /// height: the icon area), plus the sidebar, the toolbar and the status bar when shown.
-  void _fitVolumeWindow(SilicaVolume volume) {
-    final size = volumeWindowSize(
-      volume.window,
-      sidebar: _sidebarOpen ? _sidebarWidth : 0,
-      statusBar: _statusBar ? statusBarHeight : 0,
-    );
-    if (size == null) return;
+  /// Makes this window the disk image's window, or gives it its chrome back: the title bar is
+  /// 40 pt (Ossido places the window buttons in it) and the window takes the layout's size
+  /// (`.silica-window.toml` width × height under the title bar, 540 × 380 by default).
+  void _setVolumeWindow(bool on) {
+    if (_volumeWindow == on) return;
+    _update(() => _volumeWindow = on);
     final view = View.maybeOf(context)?.viewId ?? 0;
-    unawaited(SilicaWindow.setSize(size, viewId: view));
+    unawaited(
+      SilicaWindow.setFullSizeContent(
+        on ? volumeTitleBarHeight : AmalfiToolbarMetrics.toolbarHeight,
+        viewId: view,
+      ),
+    );
+    final volume = _volumeRoot;
+    if (on && volume != null) {
+      final size = volumeWindowSize(volume.window);
+      if (size != null) unawaited(SilicaWindow.setSize(size, viewId: view));
+    }
+  }
+
+  /// The disk image volume icon in alerts (silica-icons `files/volume-disk-image`).
+  Widget? get _volumeIcon {
+    final dir = widget.iconsDir;
+    if (dir == null || dir.isEmpty) return null;
+    final dark = AmalfiTheme.of(context).isDark;
+    final file = File(
+      '$dir/files/volume-disk-image/${dark ? 'icon-dark' : 'icon'}.png',
+    );
+    return file.existsSync() ? Image.file(file, width: 56, height: 56) : null;
+  }
+
+  /// The title bar of a disk image's window (kit `Apps/Mustache/Volume Window`): 40 tall, the
+  /// `drive` glyph 16, 4, and the volume's name in the title style, centred; it moves the window.
+  Widget _volumeTitleBar() {
+    final colors = AmalfiTheme.of(context).colors;
+    final name = _volumeRoot?.name ?? displayName(_history.current);
+    return WindowDragArea(
+      child: SizedBox(
+        key: const ValueKey('volume title bar'),
+        height: volumeTitleBarHeight,
+        child: Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              AmalfiSymbol('drive', size: 16, color: colors.textSecondary),
+              const SizedBox(width: 4),
+              Flexible(
+                child: Text(
+                  name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AmalfiType.bodyEmphasis(color: colors.textPrimary),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   /// Ejects a volume from its sidebar row; the window leaves it first.
@@ -195,21 +246,21 @@ extension _Apps on _MustacheWindowState {
     }
     final volume = fromVolume;
     if (volume == null || !mounted) return;
-    // From a disk image: the offer to eject it and throw the image away.
+    // From a disk image: the offer to eject it and throw the image away (kit
+    // `Alerts/Gatekeeper/Eject`: Move to Trash, then Keep, the default).
+    final installedName = displayName(
+      bundles.first,
+    ).replaceAll(RegExp(r'\.app$'), '');
     _showAlert(
       MustacheAlert(
         opaque: true,
-        icon: _appIcon,
+        icon: _volumeIcon ?? _appIcon,
+        sideBySide: true,
         title: l10n.installEject(volume.name),
+        message: l10n.installedInApplications(installedName),
         buttons: [
           AlertButton(
-            l10n.installKeep,
-            role: AlertRole.cancel,
-            onPressed: _closeAlert,
-          ),
-          AlertButton(
             l10n.moveToTrash,
-            role: AlertRole.primary,
             onPressed: () async {
               _closeAlert();
               await _eject(
@@ -222,6 +273,11 @@ extension _Apps on _MustacheWindowState {
                 _showError(l10n.volumeFailed(volume.name), result.error);
               }
             },
+          ),
+          AlertButton(
+            l10n.installKeep,
+            role: AlertRole.primary,
+            onPressed: _closeAlert,
           ),
         ],
       ),

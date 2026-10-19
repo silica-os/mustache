@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Size;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mustache/src/app_bundles.dart';
@@ -244,13 +245,34 @@ void main() {
       expect(bundleVersion(app.path), '2.4.1');
       expect(bundleVersion('${root.path}/none.app'), isNull);
       const layout = SilicaVolumeWindow(width: 540, height: 380);
-      final size = volumeWindowSize(layout, sidebar: 180, statusBar: 28)!;
-      expect(size.width, 720);
-      expect(size.height, 380 + AmalfiToolbarMetrics.toolbarHeight + 28);
+      // Kit `Apps/Mustache/Volume Window`: the content under a 40 pt title bar.
+      expect(volumeWindowSize(layout), const Size(540, 420));
       expect(
         volumeWindowSize(const SilicaVolumeWindow(width: 0, height: 0)),
         isNull,
       );
     });
   });
+
+  test(
+    'a running app is found by its live sockets and asked to quit',
+    () async {
+      final runtime = Directory('${root.path}/run')..createSync();
+      Directory('${runtime.path}/silica-apps').createSync();
+      final child = await Process.start('sleep', ['30']);
+      File(
+        '${runtime.path}/silica-apps/org.example.Lemon.${child.pid}.sock',
+      ).writeAsStringSync('');
+      // A socket of a process that is gone does not count.
+      File(
+        '${runtime.path}/silica-apps/org.example.Lemon.999999999.sock',
+      ).writeAsStringSync('');
+      final env = {'XDG_RUNTIME_DIR': runtime.path};
+      expect(appPids('org.example.Lemon', env), [child.pid]);
+      final quit = quitApp('org.example.Lemon', env);
+      await child.exitCode;
+      expect(await quit, isTrue);
+      expect(appPids('org.example.Lemon', env), isEmpty);
+    },
+  );
 }

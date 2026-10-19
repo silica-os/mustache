@@ -371,5 +371,10 @@
   "accessFolders": "Alcune cartelle",
   "accessDevices": "Tutti i dispositivi",
   "accessBackground": "In background",
-  "accessNone": "Solo i suoi file"
+  "accessNone": "Solo i suoi file",
+  "installedInApplications": "“{name}” ora è in Applicazioni.",
+  "quitAndMoveTitle": "“{name}” è aperta. Vuoi chiuderla e spostarla nel Cestino?",
+  "quitAndMove": "Chiudi e sposta",
+  "sidebarLocations": "Posizioni",
+  "ejectVolume": "Espelli {name}"
 }

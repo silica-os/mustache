@@ -223,7 +223,19 @@ class IconView extends StatefulWidget {
     this.tagsOf,
     this.positions,
     this.moveDuration = Duration.zero,
+    this.namePlates = false,
+    this.aliasBadge,
   });
+
+  /// The names on a plate (a disk image window with its own background, kit
+  /// `Apps/Mustache/Volume Item/Label Plate`): a capsule that hugs the text, padding 6 and 2,
+  /// radius 8, `#FFFFFFCC` light or `#1B1C1FCC` dark. The selection capsule replaces it.
+  final bool namePlates;
+
+  /// Items drawn with the alias badge (the Applications link of a disk image window): a circle
+  /// a quarter of the icon (`Surface/Window`, soft shadow) with `arrow-up-right` at the icon's
+  /// bottom-left.
+  final bool Function(Entry entry)? aliasBadge;
 
   /// Free positions (sort "None", R4.7): the icon's center x and top y in the content, by path.
   /// Null: the grid stretches to the width and reflows with it. With positions the cells keep the
@@ -585,6 +597,16 @@ class _IconViewState extends State<IconView> {
                   height: side,
                   child: EntryIcon(entry: entry, side: side, env: env),
                 ),
+                if (widget.aliasBadge?.call(entry) ?? false)
+                  Positioned(
+                    // (4, 92) from the icon's top-left at the icon of 128 (the master's frame), a
+                    // 32 circle: everything scales with the icon.
+                    left: (tile - side) / 2 + side * 4 / 128,
+                    top: side * 92 / 128,
+                    width: side / 4,
+                    height: side / 4,
+                    child: AliasBadge(side: side / 4),
+                  ),
                 if (field != null)
                   Positioned(
                     left: 0,
@@ -613,14 +635,27 @@ class _IconViewState extends State<IconView> {
                             decoration: ShapeDecoration(
                               color: isSelected
                                   ? (active ? c.capsule : c.capsuleInactive)
+                                  : widget.namePlates
+                                  ? (AmalfiTheme.of(context).isDark
+                                        ? const Color(0xCC1B1C1F)
+                                        : const Color(0xCCFFFFFF))
                                   : null,
-                              shape: AmalfiSmoothBorder(radius: labelRadius),
+                              shape: AmalfiSmoothBorder(
+                                radius: widget.namePlates && !isSelected
+                                    ? namePlateRadius
+                                    : labelRadius,
+                              ),
                             ),
                             child: Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: labelPad,
-                                vertical: labelCapsuleExtra / 2,
-                              ),
+                              padding: widget.namePlates && !isSelected
+                                  ? const EdgeInsets.symmetric(
+                                      horizontal: namePlatePadX,
+                                      vertical: namePlatePadY,
+                                    )
+                                  : const EdgeInsets.symmetric(
+                                      horizontal: labelPad,
+                                      vertical: labelCapsuleExtra / 2,
+                                    ),
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
@@ -663,6 +698,46 @@ class _IconViewState extends State<IconView> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The label plate of a disk image window with its own background (kit `Apps/Mustache/Volume
+/// Item/Label Plate`).
+const double namePlateRadius = 8;
+const double namePlatePadX = 6;
+const double namePlatePadY = 2;
+
+/// The alias badge (kit `Apps/Mustache/Volume Window`): a `Surface/Window` circle with a soft
+/// shadow (0/1/4, black 20 %) and the `arrow-up-right` symbol at 20/32 of it.
+class AliasBadge extends StatelessWidget {
+  const AliasBadge({super.key, required this.side});
+
+  final double side;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AmalfiTheme.of(context).colors;
+    return DecoratedBox(
+      key: const ValueKey('alias badge'),
+      decoration: BoxDecoration(
+        color: colors.surfaceWindow,
+        shape: BoxShape.circle,
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x33000000),
+            offset: Offset(0, 1),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Center(
+        child: AmalfiSymbol(
+          'arrow-up-right',
+          size: side * 20 / 32,
+          color: colors.textPrimary,
         ),
       ),
     );

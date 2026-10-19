@@ -2329,6 +2329,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Its own files only'**
   String get accessNone;
+
+  /// Eject alert: the app copied from the disk image
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is now in Applications.'**
+  String installedInApplications(String name);
+
+  /// Alert: moving a running app to the Trash
+  ///
+  /// In en, this message translates to:
+  /// **'“{name}” is open. Quit it and move it to the Trash?'**
+  String quitAndMoveTitle(String name);
+
+  /// Button: quit the app, then move it to the Trash
+  ///
+  /// In en, this message translates to:
+  /// **'Quit and Move'**
+  String get quitAndMove;
+
+  /// Sidebar section of the attached disk images
+  ///
+  /// In en, this message translates to:
+  /// **'Locations'**
+  String get sidebarLocations;
+
+  /// Screen reader: the eject button of a volume
+  ///
+  /// In en, this message translates to:
+  /// **'Eject {name}'**
+  String ejectVolume(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -327,16 +327,10 @@ class _SidebarState extends State<Sidebar> with TickerProviderStateMixin {
                   : AmalfiTheme.of(context).colors.textSecondary,
             ),
       trailing: place.kind == PlaceKind.volume && eject != null
-          ? GestureDetector(
+          ? EjectButton(
               key: ValueKey('eject ${place.path}'),
-              behavior: HitTestBehavior.opaque,
-              onTap: () => eject(place),
-              // PROVISIONAL(amalfi-gatekeeper): the eject button's size until the master.
-              child: AmalfiSymbol(
-                'eject',
-                size: 14,
-                color: AmalfiTheme.of(context).colors.textSecondary,
-              ),
+              volume: place.label,
+              onPressed: () => eject(place),
             )
           : null,
       onTap: () => widget.onSelect(place),
@@ -412,8 +406,13 @@ class _SidebarRowState extends State<_SidebarRow> {
           child: SizedBox(
             height: AmalfiSidebarMetrics.rowHeight,
             child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AmalfiSidebarMetrics.rowPadding,
+              // With the eject button the row ends 8 after it (kit `Sidebars/Row/Volume`: the
+              // 24 pt button at x 184 of the 216 row, the label 136 wide).
+              padding: EdgeInsets.only(
+                left: AmalfiSidebarMetrics.rowPadding,
+                right: widget.trailing == null
+                    ? AmalfiSidebarMetrics.rowPadding
+                    : ejectTrailingPad,
               ),
               child: Row(
                 children: [
@@ -431,10 +430,82 @@ class _SidebarRowState extends State<_SidebarRow> {
                     ),
                   ),
                   if (widget.trailing case final trailing?) ...[
-                    const SizedBox(width: AmalfiSidebarMetrics.iconGap),
-                    trailing,
+                    const SizedBox(width: ejectGap),
+                    _RowHover(hovered: _hovered, child: trailing),
                   ],
                 ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// The eject button of a volume row (kit `Sidebars/Row/Volume`): a 24 pt hit area, 8 after the
+/// label and 8 before the row's end, with the `eject` glyph 16 in `Text/Secondary` (also when
+/// the row is selected); always visible.
+const double ejectButton = 24;
+const double ejectGlyph = 16;
+const double ejectGap = 8;
+const double ejectTrailingPad = 8;
+
+/// Tells the eject button whether its row is hovered (it then draws the hover circle).
+class _RowHover extends InheritedWidget {
+  const _RowHover({required this.hovered, required super.child});
+
+  final bool hovered;
+
+  static bool of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<_RowHover>()?.hovered ?? false;
+
+  @override
+  bool updateShouldNotify(_RowHover old) => old.hovered != hovered;
+}
+
+class EjectButton extends StatelessWidget {
+  const EjectButton({super.key, required this.volume, required this.onPressed});
+
+  /// The volume's name, for the screen reader ("Eject <volume>").
+  final String volume;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = AmalfiTheme.of(context).colors;
+    final hovered = _RowHover.of(context);
+    return Semantics(
+      container: true,
+      button: true,
+      label: l10n.ejectVolume(volume),
+      excludeSemantics: true,
+      child: FocusableActionDetector(
+        actions: {
+          ActivateIntent: CallbackAction<ActivateIntent>(
+            onInvoke: (_) {
+              onPressed();
+              return null;
+            },
+          ),
+        },
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: onPressed,
+          child: SizedBox.square(
+            dimension: ejectButton,
+            child: DecoratedBox(
+              // In the row's hover, a circle in the row's hover fill behind the glyph.
+              decoration: BoxDecoration(
+                color: hovered ? colors.lineSeparator : null,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: AmalfiSymbol(
+                  'eject',
+                  size: ejectGlyph,
+                  color: colors.textSecondary,
+                ),
               ),
             ),
           ),

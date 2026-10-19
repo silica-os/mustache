@@ -1297,4 +1297,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get accessNone => 'Its own files only';
+
+  @override
+  String installedInApplications(String name) {
+    return '“$name” is now in Applications.';
+  }
+
+  @override
+  String quitAndMoveTitle(String name) {
+    return '“$name” is open. Quit it and move it to the Trash?';
+  }
+
+  @override
+  String get quitAndMove => 'Quit and Move';
+
+  @override
+  String get sidebarLocations => 'Locations';
+
+  @override
+  String ejectVolume(String name) {
+    return 'Eject $name';
+  }
 }

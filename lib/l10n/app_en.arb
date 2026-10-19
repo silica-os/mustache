@@ -1735,5 +1735,15 @@
   "accessBackground": "Background",
   "@accessBackground": {"description": "Access: may run without windows"},
   "accessNone": "Its own files only",
-  "@accessNone": {"description": "Access: nothing outside its sandbox"}
+  "@accessNone": {"description": "Access: nothing outside its sandbox"},
+  "installedInApplications": "“{name}” is now in Applications.",
+  "@installedInApplications": {"description": "Eject alert: the app copied from the disk image", "placeholders": {"name": {"type": "String"}}},
+  "quitAndMoveTitle": "“{name}” is open. Quit it and move it to the Trash?",
+  "@quitAndMoveTitle": {"description": "Alert: moving a running app to the Trash", "placeholders": {"name": {"type": "String"}}},
+  "quitAndMove": "Quit and Move",
+  "@quitAndMove": {"description": "Button: quit the app, then move it to the Trash"},
+  "sidebarLocations": "Locations",
+  "@sidebarLocations": {"description": "Sidebar section of the attached disk images"},
+  "ejectVolume": "Eject {name}",
+  "@ejectVolume": {"description": "Screen reader: the eject button of a volume", "placeholders": {"name": {"type": "String"}}}
 }

@@ -278,7 +278,33 @@ extension _Operations on _MustacheWindowState {
         return;
       }
       if (bundleId(entry.path) case final id? when appRunning(id, env)) {
-        _showError(l10n.appIsRunning(name));
+        // Kit `Alerts/Gatekeeper/Quit and Move`: quit it first, then the Trash.
+        _showAlert(
+          MustacheAlert(
+            opaque: true,
+            icon: _appIcon,
+            sideBySide: true,
+            title: l10n.quitAndMoveTitle(name),
+            buttons: [
+              AlertButton(
+                l10n.quitAndMove,
+                onPressed: () async {
+                  _closeAlert();
+                  if (!await quitApp(id, env)) {
+                    if (mounted) _showError(l10n.appIsRunning(name));
+                    return;
+                  }
+                  if (mounted) _moveToTrash(items);
+                },
+              ),
+              AlertButton(
+                l10n.cancel,
+                role: AlertRole.primary,
+                onPressed: _closeAlert,
+              ),
+            ],
+          ),
+        );
         return;
       }
     }

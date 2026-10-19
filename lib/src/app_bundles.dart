@@ -168,19 +168,14 @@ Map<String, Offset> volumePositions(
   return out;
 }
 
-/// The window size for a disk image's layout: its content (width × height, in pt) with the
-/// sidebar beside it and the toolbar and the status bar above and below; null when the layout
-/// gives no size.
-Size? volumeWindowSize(
-  SilicaVolumeWindow layout, {
-  double sidebar = 0,
-  double statusBar = 0,
-}) {
+/// The height of a disk image window's title bar (kit `Apps/Mustache/Volume Window`).
+const double volumeTitleBarHeight = 40;
+
+/// The window size for a disk image's layout: its content (width × height, in pt; the default
+/// 540 × 380) under the 40 pt title bar; null when the layout gives no size.
+Size? volumeWindowSize(SilicaVolumeWindow layout) {
   if (layout.width <= 0 || layout.height <= 0) return null;
-  return Size(
-    layout.width + sidebar,
-    layout.height + AmalfiToolbarMetrics.toolbarHeight + statusBar,
-  );
+  return Size(layout.width, layout.height + volumeTitleBarHeight);
 }
 
 /// Starts the app of a bundle (through silica-launch: its trust check and sandbox).
@@ -331,6 +326,45 @@ String? bundleVersion(String path) {
     return null;
   }
   return null;
+}
+
+/// The live processes of the app `id` in the session's app registry
+/// (`$XDG_RUNTIME_DIR/silica-apps/<id>.<pid>.sock`).
+List<int> appPids(String id, Map<String, String> env) {
+  final runtime = env['XDG_RUNTIME_DIR'];
+  if (runtime == null || runtime.isEmpty) return const [];
+  final out = <int>[];
+  try {
+    for (final e in Directory('$runtime/silica-apps').listSync()) {
+      final name = e.path.split('/').last;
+      if (!name.startsWith('$id.') || !name.endsWith('.sock')) continue;
+      final pid = int.tryParse(
+        name.substring(id.length + 1, name.length - '.sock'.length),
+      );
+      if (pid != null && Directory('/proc/$pid').existsSync()) out.add(pid);
+    }
+  } on FileSystemException {
+    return const [];
+  }
+  return out;
+}
+
+/// Asks the app `id` to quit (SIGTERM to its processes) and waits until they are gone, at most
+/// `wait`; true when it quit.
+Future<bool> quitApp(
+  String id,
+  Map<String, String> env, {
+  Duration wait = const Duration(seconds: 5),
+}) async {
+  for (final pid in appPids(id, env)) {
+    Process.killPid(pid);
+  }
+  final until = DateTime.now().add(wait);
+  while (DateTime.now().isBefore(until)) {
+    if (appPids(id, env).isEmpty) return true;
+    await Future<void>.delayed(const Duration(milliseconds: 100));
+  }
+  return appPids(id, env).isEmpty;
 }
 
 /// Whether the app `id` runs now: the session's app registry has a socket of a live process

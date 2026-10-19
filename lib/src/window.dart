@@ -382,6 +382,11 @@ class _MustacheWindowState extends State<MustacheWindow>
 
   /// The attached disk images (Volumes1) and their changes.
   List<SilicaVolume> _volumes = const [];
+
+  /// This window is a disk image's window (opened on attach, kit `Apps/Mustache/Volume Window`):
+  /// a 40 pt title bar only, no toolbar, sidebar or status bar, the layout of its
+  /// `.silica-window.toml`. Leaving the image's top folder gives the window its chrome back.
+  bool _volumeWindow = false;
   StreamSubscription<String>? _volumeEvents;
 
   /// Replaces the file-based registry with the session's (bundles and AppImages included).
@@ -783,6 +788,7 @@ class _MustacheWindowState extends State<MustacheWindow>
   }
 
   void _navigate(String path) {
+    if (_volumeWindow) _setVolumeWindow(false);
     _tagView = null;
     if (_searching) {
       _searching = false;
@@ -1249,7 +1255,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                 // While hiding, the sidebar slides left (keeping its width) and the content widens;
                 // dragging its edge follows the pointer.
                 final shown = _resizing ? (_sidebarOpen ? 1.0 : 0.0) : progress;
-                final visible = _sidebarWidth * shown;
+                final visible = _volumeWindow ? 0.0 : _sidebarWidth * shown;
                 final colors = AmalfiTheme.of(context).colors;
                 // The preview section: the preview pane (⇧⌘P), always in the gallery and in the
                 // column view (kit `Gallery`, `Columns`).
@@ -1296,11 +1302,17 @@ class _MustacheWindowState extends State<MustacheWindow>
                                           if (place.kind == PlaceKind.home &&
                                               _sidebarShows(place.kind.name))
                                             place,
-                                        // Attached disk images, with their eject button.
-                                        ..._volumePlaces,
                                         if (_sidebarShows(PlaceKind.trash.name))
                                           widget.trash,
                                       ],
+                                    ),
+                                    // Attached disk images, with their eject button (kit
+                                    // `Apps/Mustache/Sidebar Volume`): the section shows only
+                                    // while one is attached.
+                                    SidebarSection(
+                                      l10n.sidebarLocations,
+                                      glyphs: SidebarGlyphs.secondary,
+                                      _volumePlaces,
                                     ),
                                     SidebarSection(
                                       l10n.savedSearchesFolder,
@@ -1356,8 +1368,12 @@ class _MustacheWindowState extends State<MustacheWindow>
                                   crossAxisAlignment:
                                       CrossAxisAlignment.stretch,
                                   children: [
-                                    _toolbar(visible, withSearch: !pane),
-                                    ..._bars(),
+                                    if (_volumeWindow)
+                                      _volumeTitleBar()
+                                    else ...[
+                                      _toolbar(visible, withSearch: !pane),
+                                      ..._bars(),
+                                    ],
                                     Expanded(
                                       // The open folder as a drop target: a 2 pt line along the edge
                                       // of the content.
@@ -1384,7 +1400,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                                         ),
                                       ),
                                     ),
-                                    if (_pathBar)
+                                    if (_pathBar && !_volumeWindow)
                                       PathBar(
                                         // The chosen item is the last segment (R1.17).
                                         path: _selected.length == 1
@@ -1404,7 +1420,7 @@ class _MustacheWindowState extends State<MustacheWindow>
                                     if (widget.dialog != null) _dialogButtons(),
                                     // The status bar below the path bar (spec/bars.md); it moves the
                                     // window (MU-08).
-                                    if (_statusBar)
+                                    if (_statusBar && !_volumeWindow)
                                       WindowDragArea(
                                         child: StatusBar(
                                           active: _active,
@@ -1945,9 +1961,16 @@ class _MustacheWindowState extends State<MustacheWindow>
     final positions = layout == null || layout.items.isEmpty
         ? _freePositions
         : volumePositions(_entries, layout, side);
+    final background = layout?.background ?? '';
     final view = IconView(
       side: side,
       positions: positions,
+      // On the image's own background the names sit on plates; the Applications link wears
+      // the alias badge (kit `Apps/Mustache/Volume Window`).
+      namePlates: background.isNotEmpty,
+      aliasBadge: volume == null
+          ? null
+          : (e) => e.isLink && isApplicationsFolder(e.path),
       moveDuration: _moveDuration,
       entries: _entries,
       selected: _selected,
@@ -1973,7 +1996,6 @@ class _MustacheWindowState extends State<MustacheWindow>
         _anchor = null;
       }),
     );
-    final background = layout?.background ?? '';
     if (background.isEmpty) return view;
     return Stack(
       children: [

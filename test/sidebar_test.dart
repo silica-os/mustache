@@ -101,6 +101,18 @@ void main() {
       ValueKey('eject ${root.path}/run/silica-volumes/Hello'),
     );
     expect(eject, findsOneWidget);
+    // Kit `Sidebars/Row/Volume/Rest`: the section Locations, the row 216 × 32 (here as wide as
+    // the sidebar), the eject button 24 × 24 ending 8 before the row's end, 4 from its top, and
+    // the label 136 wide at the kit's sidebar width.
+    expect(find.text('Locations'), findsOneWidget);
+    final label = tester.getRect(inSidebar('Hello'));
+    final button = tester.getRect(eject);
+    expect(button.size, const Size(24, 24));
+    expect(button.left - label.right, greaterThanOrEqualTo(8));
+    final semantics = tester.ensureSemantics();
+    await tester.pump();
+    expect(find.bySemanticsLabel('Eject Hello'), findsOneWidget);
+    semantics.dispose();
     await tester.tap(eject);
     await tester.pump();
     await tester.pump();

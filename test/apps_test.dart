@@ -105,6 +105,54 @@ text/plain=editor.desktop;
     expect(registry.defaultFor('application/x-ignoto'), isNull);
   });
 
+  test(
+    'the registry\'s apps keep the associations; bundles by their entry id',
+    () {
+      final registry = AppRegistry.withInstalled(
+        const [
+          SilicaInstalledApp(
+            id: 'dev.example.Viewer',
+            name: 'Viewer',
+            kind: SilicaInstalledAppKind.bundle,
+            exec: 'silica-launch /Applications/Viewer.app %U',
+            mimeTypes: ['image/png', 'text/plain'],
+            silicaIcon: '/Applications/Viewer.app/Contents/Resources/icon',
+          ),
+          SilicaInstalledApp(
+            id: 'visore',
+            name: 'Visore',
+            desktopFile: '/data/applications/visore.desktop',
+            exec: 'visore %f',
+            mimeTypes: ['image/png'],
+          ),
+          SilicaInstalledApp(
+            id: 'helper',
+            name: 'Helper',
+            exec: 'helper',
+            noDisplay: true,
+            mimeTypes: ['image/png'],
+          ),
+        ],
+        env: env,
+        mime: mime,
+      );
+      expect(registry.apps.keys.toSet(), {
+        'silica-bundles-dev.example.Viewer.desktop',
+        'visore.desktop',
+      });
+      final viewer =
+          registry.apps['silica-bundles-dev.example.Viewer.desktop']!;
+      expect(viewer.appId, 'dev.example.Viewer');
+      // mimeapps.list still decides the default.
+      expect(registry.defaultFor('image/png')?.id, 'visore.desktop');
+      expect(
+        [for (final a in registry.appsFor('image/png')) a.name],
+        ['Viewer', 'Visore'],
+      );
+      expect(registry.defaultFor('text/plain')?.appId, 'dev.example.Viewer');
+    },
+  );
+
   test('Exec: field codes, quoting, file at the end', () {
     final registry = AppRegistry.load(env: env, mime: mime);
     expect(

@@ -373,6 +373,22 @@ class _MustacheWindowState extends State<MustacheWindow>
 
   /// The apps (read the first time an app is opened), the MIME types and the open context menu.
   AppRegistry? _apps;
+
+  /// The registry's changes (an app installed or removed, a new default): Open With reads it
+  /// again.
+  StreamSubscription<SilicaAppsEvent>? _appEvents;
+
+  /// Replaces the file-based registry with the session's (bundles and AppImages included).
+  Future<void> _loadApps() async {
+    final installed = await SilicaApps.list();
+    if (!mounted || installed == null) return;
+    _apps = AppRegistry.withInstalled(
+      installed,
+      env: widget.iconsEnv,
+      mime: systemMime,
+    );
+  }
+
   final Map<String, String> _types = {};
 
   /// The key of the body, to find the overlay the menus are shown in.
@@ -551,6 +567,10 @@ class _MustacheWindowState extends State<MustacheWindow>
     _saveFocus.addListener(_menusChanged);
     _startSettings();
     _load();
+    if (widget.dialog == null) {
+      unawaited(_loadApps());
+      _appEvents = SilicaApps.events().listen((_) => unawaited(_loadApps()));
+    }
     // The app icons of Open With, composed ahead for the shell's menus (mustache#28).
     // (Not for an Open or Save panel: it opens fast and offers no Open With.)
     if (widget.dialog == null) {
@@ -574,6 +594,7 @@ class _MustacheWindowState extends State<MustacheWindow>
     _unwatchStyles();
     _lifecycle.dispose();
     _externalDrags?.cancel();
+    _appEvents?.cancel();
     _focus.dispose();
     _customizeFocus.dispose();
     _listScrollX.dispose();

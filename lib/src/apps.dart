@@ -1,13 +1,21 @@
-// The apps that open a file (MU-50, docs/spec R10.1): .desktop entries with `MimeType`
-// (freedesktop Desktop Entry specification), the choices of `mimeapps.list` (the "Association
-// between MIME types and applications" specification: defaults, added, removed) and launching with
-// the field codes of `Exec`.
+// The apps that open a file (MU-50, docs/spec R10.1): the session's app registry (Launch
+// Services, silica-daemon's Apps1 through `SilicaApps`: desktop entries, app bundles, AppImages,
+// Flatpak apps) when it runs, else the .desktop entries with `MimeType` (freedesktop Desktop
+// Entry specification); the choices of `mimeapps.list` (the "Association between MIME types and
+// applications" specification: defaults, added, removed); launching through the registry, or
+// with the field codes of `Exec`.
 
 import 'external.dart';
 
 import 'dart:io';
 
-import 'package:silica_ui/silica_ui.dart' show MimeDatabase, xdgDataDirs;
+import 'package:silica_ui/silica_ui.dart'
+    show
+        MimeDatabase,
+        SilicaApps,
+        SilicaInstalledApp,
+        SilicaInstalledAppKind,
+        xdgDataDirs;
 
 import 'l10n.dart';
 
@@ -21,6 +29,7 @@ class DesktopApp {
     this.icon,
     this.silicaIcon,
     this.terminal = false,
+    this.appId,
   });
 
   /// The id of the entry (`org.gnome.TextEditor.desktop`).
@@ -34,7 +43,43 @@ class DesktopApp {
   /// null for every other app.
   final String? silicaIcon;
   final bool terminal;
+
+  /// The id of the app in the session's registry (Launch Services): launched through it.
+  final String? appId;
 }
+
+/// The registry's apps as Mustache's, keyed by the desktop file id that `mimeapps.list` uses for
+/// them (`<id>.desktop`; `silica-bundles-<id>.desktop` for bundles and AppImages, whose entries
+/// the registry writes in `applications/silica-bundles/`). Apps that ask not to be shown are
+/// left out.
+Map<String, DesktopApp> appsFromInstalled(
+  Iterable<SilicaInstalledApp> apps, {
+  String? locale,
+}) {
+  locale ??= l10n.localeName;
+  return {
+    for (final app in apps)
+      if (!app.noDisplay && app.exec.isNotEmpty)
+        desktopIdOf(app): DesktopApp(
+          id: desktopIdOf(app),
+          name: app.nameIn(locale),
+          exec: app.exec,
+          mimeTypes: app.mimeTypes,
+          icon: app.icon.isEmpty ? null : app.icon,
+          silicaIcon: app.silicaIcon.isEmpty ? null : app.silicaIcon,
+          terminal: app.terminal,
+          appId: app.id,
+        ),
+  };
+}
+
+/// The desktop file id other desktops know an app of the registry by.
+String desktopIdOf(SilicaInstalledApp app) =>
+    app.kind == SilicaInstalledAppKind.bundle ||
+        app.kind == SilicaInstalledAppKind.appimage ||
+        (app.kind == SilicaInstalledAppKind.system && app.desktopFile.isEmpty)
+    ? 'silica-bundles-${app.id}.desktop'
+    : '${app.id}.desktop';
 
 /// A .desktop entry (text); null if it is not a launchable app or it is hidden.
 DesktopApp? parseDesktopApp(String id, String text, {String? locale}) {
@@ -138,28 +183,36 @@ class AppRegistry {
         continue;
       }
     }
-    final mimeApps = MimeApps();
-    final home = e['HOME'] ?? '/';
-    final config = e['XDG_CONFIG_HOME'];
-    final configHome = config == null || config.isEmpty
-        ? '$home/.config'
-        : config;
-    final configDirs = (e['XDG_CONFIG_DIRS'] ?? '/etc/xdg').split(':');
-    for (final path in [
-      '$configHome/mimeapps.list',
-      for (final d in configDirs)
-        if (d.isNotEmpty) '$d/mimeapps.list',
-      for (final d in dataDirs) '$d/applications/mimeapps.list',
-    ]) {
-      try {
-        mimeApps.addFile(File(path).readAsStringSync());
-      } on FileSystemException {
-        continue;
-      } on FormatException {
-        continue;
-      }
-    }
-    return AppRegistry(apps, mimeApps, mime ?? MimeDatabase.load(env: env));
+    return AppRegistry(
+      apps,
+      loadMimeApps(e),
+      mime ?? MimeDatabase.load(env: env),
+    );
+  }
+
+  /// The registry's apps (Launch Services) with the same associations.
+  factory AppRegistry.withInstalled(
+    Iterable<SilicaInstalledApp> installed, {
+    Map<String, String>? env,
+    MimeDatabase? mime,
+  }) {
+    final e = env ?? Platform.environment;
+    return AppRegistry(
+      appsFromInstalled(installed),
+      loadMimeApps(e),
+      mime ?? MimeDatabase.load(env: env),
+    );
+  }
+
+  /// From the registry when it runs (bundles and AppImages included), else from the files.
+  static Future<AppRegistry> current({
+    Map<String, String>? env,
+    MimeDatabase? mime,
+  }) async {
+    final installed = await SilicaApps.list();
+    return installed == null
+        ? AppRegistry.load(env: env, mime: mime)
+        : AppRegistry.withInstalled(installed, env: env, mime: mime);
   }
 
   final Map<String, DesktopApp> apps;
@@ -202,6 +255,34 @@ class AppRegistry {
     }
     return out;
   }
+}
+
+/// The `mimeapps.list` files of configuration and data, merged (specification, "File name and
+/// location").
+MimeApps loadMimeApps(Map<String, String> e) {
+  final mimeApps = MimeApps();
+  final dataDirs = xdgDataDirs(e);
+  final home = e['HOME'] ?? '/';
+  final config = e['XDG_CONFIG_HOME'];
+  final configHome = config == null || config.isEmpty
+      ? '$home/.config'
+      : config;
+  final configDirs = (e['XDG_CONFIG_DIRS'] ?? '/etc/xdg').split(':');
+  for (final path in [
+    '$configHome/mimeapps.list',
+    for (final d in configDirs)
+      if (d.isNotEmpty) '$d/mimeapps.list',
+    for (final d in dataDirs) '$d/applications/mimeapps.list',
+  ]) {
+    try {
+      mimeApps.addFile(File(path).readAsStringSync());
+    } on FileSystemException {
+      continue;
+    } on FormatException {
+      continue;
+    }
+  }
+  return mimeApps;
 }
 
 /// The `Exec` command line to open `paths` (field codes: %f %F %u %U, %i %c %k; %d %D %n %N %v %m
@@ -277,6 +358,15 @@ List<String> _splitExec(String exec) {
 
 /// Launches an app on some files, detached from Mustache. An error (missing program) is a message.
 Future<String?> launchApp(DesktopApp app, List<String> paths) async {
+  // Through the registry: the same command line every launcher uses, bundles and AppImages
+  // through their trust check and sandbox.
+  if (app.appId case final id?) {
+    final pid = await SilicaApps.open(
+      id,
+      uris: [for (final p in paths) Uri.file(p).toString()],
+    );
+    if (pid != null) return null;
+  }
   final args = execArguments(app, paths);
   if (args.isEmpty) return l10n.appHasNoCommand(app.name);
   try {

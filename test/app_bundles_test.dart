@@ -132,4 +132,41 @@ void main() {
     expect(appRunning('dev.example.Hello', env), isTrue);
     expect(appRunning('dev.example', env), isFalse);
   });
+
+  test('a volume layout places its items and puts the others under it', () {
+    Entry e(String name) => Entry(
+      name: name,
+      path: '/v/$name',
+      isDirectory: false,
+      size: 0,
+      modified: DateTime(2026),
+    );
+    const layout = SilicaVolumeWindow(
+      iconSize: 128,
+      items: [
+        SilicaVolumeItem('Hello.app', 140, 190),
+        SilicaVolumeItem('Applications', 400, 190),
+      ],
+    );
+    final p = volumePositions(
+      [e('Hello.app'), e('Applications'), e('LICENSE.txt')],
+      layout,
+      128,
+    );
+    expect(p['/v/Hello.app'], const Offset(140, 126));
+    expect(p['/v/Applications'], const Offset(400, 126));
+    // Under the lowest item, not on it.
+    expect(p['/v/LICENSE.txt']!.dy, greaterThan(190 + 64));
+  });
+
+  test('a link to Applications counts as Applications', () {
+    final link = Link('${root.path}/Applications')
+      ..createSync('/var/Applications');
+    // The target may not exist here: the name of the link target still says it.
+    expect(
+      isApplicationsFolder(link.path),
+      Directory('/var/Applications').existsSync(),
+    );
+    expect(isApplicationsFolder('/Applications'), isTrue);
+  });
 }

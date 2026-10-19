@@ -5,6 +5,7 @@
 // when the folder is not writable).
 
 import 'dart:io';
+import 'dart:ui' show Offset;
 
 import 'package:silica_ui/silica_ui.dart';
 
@@ -31,12 +32,22 @@ bool isAppBundle(String path) =>
     File('$path/Contents/Info.toml').existsSync() &&
     FileSystemEntity.isDirectorySync(path);
 
-/// Whether `path` is the Applications folder (its link or its target).
+/// Whether `path` is the Applications folder: its link, its target, or a link to it (the
+/// alias in a disk image).
 bool isApplicationsFolder(String path) {
-  final trimmed = path.endsWith('/') && path.length > 1
-      ? path.substring(0, path.length - 1)
-      : path;
-  return trimmed == applicationsPath || trimmed == '/var/Applications';
+  bool named(String p) {
+    final trimmed = p.endsWith('/') && p.length > 1
+        ? p.substring(0, p.length - 1)
+        : p;
+    return trimmed == applicationsPath || trimmed == '/var/Applications';
+  }
+
+  if (named(path)) return true;
+  try {
+    return named(Directory(path).resolveSymbolicLinksSync());
+  } on FileSystemException {
+    return false;
+  }
 }
 
 /// The folders the Applications view merges, most important first: the user's, then every
@@ -78,6 +89,31 @@ SilicaVolume? volumeOf(String path, List<SilicaVolume> volumes) {
     if (path == v.mountpoint || path.startsWith('${v.mountpoint}/')) return v;
   }
   return null;
+}
+
+/// The icon positions of a disk image's window (centre x, top y): those its layout names, and
+/// the other items in a row under them, so that nothing lands on top of the layout.
+Map<String, Offset> volumePositions(
+  List<Entry> entries,
+  SilicaVolumeWindow layout,
+  double side,
+) {
+  final out = <String, Offset>{};
+  final rest = <Entry>[];
+  for (final e in entries) {
+    final item = layout.items.where((i) => i.name == e.name).firstOrNull;
+    if (item == null) {
+      rest.add(e);
+    } else {
+      out[e.path] = Offset(item.x, item.y - side / 2);
+    }
+  }
+  final bottom = layout.items.fold<double>(0, (m, i) => i.y > m ? i.y : m);
+  final step = side + 40;
+  for (final (i, e) in rest.indexed) {
+    out[e.path] = Offset(step / 2 + 20 + i * step, bottom + side / 2 + 40);
+  }
+  return out;
 }
 
 /// Starts the app of a bundle (through silica-launch: its trust check and sandbox).

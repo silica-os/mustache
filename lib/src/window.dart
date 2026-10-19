@@ -1917,12 +1917,7 @@ class _MustacheWindowState extends State<MustacheWindow>
     final side = layout == null ? _iconSide : layout.iconSize;
     final positions = layout == null || layout.items.isEmpty
         ? _freePositions
-        : {
-            for (final e in _entries)
-              if (layout.items.where((i) => i.name == e.name).firstOrNull
-                  case final item?)
-                e.path: Offset(item.x, item.y - side / 2),
-          };
+        : volumePositions(_entries, layout, side);
     final view = IconView(
       side: side,
       positions: positions,

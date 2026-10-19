@@ -376,5 +376,7 @@
   "quitAndMoveTitle": "“{name}” è aperta. Vuoi chiuderla e spostarla nel Cestino?",
   "quitAndMove": "Chiudi e sposta",
   "sidebarLocations": "Posizioni",
-  "ejectVolume": "Espelli {name}"
+  "ejectVolume": "Espelli {name}",
+  "infoRunInSandbox": "Esegui in sandbox",
+  "infoSandboxFailed": "Non è stato possibile cambiare l’impostazione della sandbox."
 }

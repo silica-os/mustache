@@ -1745,5 +1745,9 @@
   "sidebarLocations": "Locations",
   "@sidebarLocations": {"description": "Sidebar section of the attached disk images"},
   "ejectVolume": "Eject {name}",
-  "@ejectVolume": {"description": "Screen reader: the eject button of a volume", "placeholders": {"name": {"type": "String"}}}
+  "@ejectVolume": {"description": "Screen reader: the eject button of a volume", "placeholders": {"name": {"type": "String"}}},
+  "infoRunInSandbox": "Run in sandbox",
+  "@infoRunInSandbox": {"description": "Get Info of an AppImage: run it in the sandbox"},
+  "infoSandboxFailed": "The sandbox setting could not be changed.",
+  "@infoSandboxFailed": {"description": "Alert: Trust1 refused or is not running"}
 }

@@ -367,6 +367,46 @@ Future<bool> quitApp(
   return appPids(id, env).isEmpty;
 }
 
+/// Whether `path` is a type-2 AppImage (`*.AppImage`, an ELF with `AI\x02` at offset 8).
+bool isAppImage(String path) {
+  if (!path.toLowerCase().endsWith('.appimage')) return false;
+  try {
+    final file = File(path).openSync();
+    try {
+      final head = file.readSync(11);
+      return head.length == 11 &&
+          head[0] == 0x7f &&
+          head[1] == 0x45 &&
+          head[2] == 0x4c &&
+          head[3] == 0x46 &&
+          head[8] == 0x41 &&
+          head[9] == 0x49 &&
+          head[10] == 0x02;
+    } finally {
+      file.closeSync();
+    }
+  } on FileSystemException {
+    return false;
+  }
+}
+
+/// Runs an AppImage in the sandbox from now on, or not (Trust1.SetSandbox); true when done.
+Future<bool> setAppImageSandbox(String path, bool on) async {
+  try {
+    final reply = await SilicaDBus.instance.call(
+      destination: 'dev.frascella.Silica',
+      path: '/dev/frascella/Silica/Trust1',
+      interface: 'dev.frascella.Silica.Trust1',
+      method: 'SetSandbox',
+      signature: 'sb',
+      args: [path, on],
+    );
+    return reply.firstOrNull == true;
+  } on Exception {
+    return false;
+  }
+}
+
 /// Whether the app `id` runs now: the session's app registry has a socket of a live process
 /// (`$XDG_RUNTIME_DIR/silica-apps/<id>.<pid>.sock`).
 bool appRunning(String id, Map<String, String> env) {

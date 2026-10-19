@@ -76,6 +76,7 @@ extension _InfoWindows on _MustacheWindowState {
         env: widget.iconsEnv,
         open: _infoOpen,
         app: _appDetailsOf(entry),
+        onSandbox: (on) => unawaited(_setSandbox(entry.path, on)),
         openWith: entry.isDirectory
             ? null
             : _registry.defaultFor(_typeOf(entry))?.name,
@@ -108,7 +109,9 @@ extension _InfoWindows on _MustacheWindowState {
   /// view): from the cache, else null while they are read (the panel shows them when they come).
   AppDetails? _appDetailsOf(Entry entry) {
     final flatpak = _flatpaks[entry.path];
-    if (flatpak == null && !(entry.isDirectory && isAppBundle(entry.path))) {
+    if (flatpak == null &&
+        !(entry.isDirectory && isAppBundle(entry.path)) &&
+        !(!entry.isDirectory && isAppImage(entry.path))) {
       return null;
     }
     if (_appDetails[entry.path] case final cached?) return cached;
@@ -131,16 +134,32 @@ extension _InfoWindows on _MustacheWindowState {
       // The verdict of Gatekeeper on the bundle as it is now (its signature, its files).
       final assessment = await SilicaTrust.assess(path);
       final system = isSystemApp(path);
+      final appImage = isAppImage(path);
       details = AppDetails(
         version: app?.version ?? bundleVersion(path) ?? '',
         developer: app?.developer ?? '',
-        signature: assessment == null ? '' : signatureLabel(assessment.info),
-        access: accessLabel(app?.permissions ?? const {}, system: system),
+        signature: assessment == null || appImage
+            ? ''
+            : signatureLabel(assessment.info),
+        access: appImage
+            ? ''
+            : accessLabel(app?.permissions ?? const {}, system: system),
+        sandbox: appImage ? assessment?.info['sandbox'] == true : null,
       );
     }
     _appDetailsLoading.remove(path);
     if (!mounted) return;
     _appDetails[path] = details;
+    _infoRevision.value++;
+    _update(() {});
+  }
+
+  /// "Run in sandbox" of an AppImage changed: Trust1 keeps it; the details are read again.
+  Future<void> _setSandbox(String path, bool on) async {
+    final done = await setAppImageSandbox(path, on);
+    if (!mounted) return;
+    if (!done) _showError(l10n.infoSandboxFailed);
+    _appDetails.remove(path);
     _infoRevision.value++;
     _update(() {});
   }

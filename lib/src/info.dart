@@ -112,6 +112,7 @@ class AppDetails {
     this.developer = '',
     this.signature = '',
     this.access = '',
+    this.sandbox,
   });
 
   final String version;
@@ -123,6 +124,10 @@ class AppDetails {
   /// What it may reach outside its sandbox ("Network, Home folder"), or that it has the whole
   /// computer (a system app).
   final String access;
+
+  /// An AppImage: whether it runs in the sandbox (the "Run in sandbox" checkbox); null for other
+  /// apps.
+  final bool? sandbox;
 }
 
 /// The signature line of an app from Trust1's assessment info (`developer_status`, `reason`,
@@ -211,9 +216,13 @@ class InfoPanel extends StatefulWidget {
     this.onAddTag,
     this.onTagsChanged,
     this.app,
+    this.onSandbox,
   });
 
   final Entry entry;
+
+  /// The "Run in sandbox" checkbox of an AppImage was changed.
+  final ValueChanged<bool>? onSandbox;
 
   /// The app's details when the item is an app (null otherwise, or while they load).
   final AppDetails? app;
@@ -626,6 +635,22 @@ class _InfoPanelState extends State<InfoPanel> {
               if (app.signature.isNotEmpty)
                 _row(l10n.infoSignature, app.signature),
               if (app.access.isNotEmpty) _row(l10n.infoAccess, app.access),
+              if (app.sandbox case final sandbox?)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: infoPadding,
+                    vertical: 4,
+                  ),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: AmalfiCheckbox(
+                      key: const ValueKey('info sandbox'),
+                      value: sandbox,
+                      label: l10n.infoRunInSandbox,
+                      onChanged: widget.onSandbox,
+                    ),
+                  ),
+                ),
             ],
             if (!entry.isDirectory && app == null)
               _row(l10n.infoContentType, mime ?? '--'),

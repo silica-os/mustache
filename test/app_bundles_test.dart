@@ -275,4 +275,44 @@ void main() {
       expect(appPids('org.example.Lemon', env), isEmpty);
     },
   );
+
+  test(
+    'AppImages are told by their header, and Run in sandbox asks Trust1',
+    () async {
+      final app = File('${root.path}/Lemon-1.0-x86_64.AppImage')
+        ..writeAsBytesSync([
+          0x7f,
+          0x45,
+          0x4c,
+          0x46,
+          2,
+          1,
+          1,
+          0,
+          0x41,
+          0x49,
+          2,
+          0,
+        ]);
+      final other = File('${root.path}/Fake.AppImage')
+        ..writeAsStringSync('#!/bin/sh');
+      expect(isAppImage(app.path), isTrue);
+      expect(isAppImage(other.path), isFalse);
+      expect(isAppImage('${root.path}/none.AppImage'), isFalse);
+      final calls = <List<Object?>>[];
+      TestWidgetsFlutterBinding.ensureInitialized();
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SilicaDBus.channel, (call) async {
+            final args = call.arguments as Map;
+            calls.add([args['method'], ...(args['args'] as List)]);
+            return [true];
+          });
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SilicaDBus.channel, null),
+      );
+      expect(await setAppImageSandbox(app.path, true), isTrue);
+      expect(calls.single, ['SetSandbox', app.path, true]);
+    },
+  );
 }

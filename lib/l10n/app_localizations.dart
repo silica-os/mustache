@@ -2359,6 +2359,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Eject {name}'**
   String ejectVolume(String name);
+
+  /// Get Info of an AppImage: run it in the sandbox
+  ///
+  /// In en, this message translates to:
+  /// **'Run in sandbox'**
+  String get infoRunInSandbox;
+
+  /// Alert: Trust1 refused or is not running
+  ///
+  /// In en, this message translates to:
+  /// **'The sandbox setting could not be changed.'**
+  String get infoSandboxFailed;
 }
 
 class _AppLocalizationsDelegate

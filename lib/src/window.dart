@@ -1515,6 +1515,8 @@ class _MustacheWindowState extends State<MustacheWindow>
                                 env: widget.iconsEnv,
                                 open: _infoOpen,
                                 app: _appDetailsOf(entry),
+                                onSandbox: (on) =>
+                                    unawaited(_setSandbox(entry.path, on)),
                                 openWith: entry.isDirectory
                                     ? null
                                     : _registry

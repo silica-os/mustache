@@ -1318,4 +1318,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String ejectVolume(String name) {
     return 'Eject $name';
   }
+
+  @override
+  String get infoRunInSandbox => 'Run in sandbox';
+
+  @override
+  String get infoSandboxFailed => 'The sandbox setting could not be changed.';
 }
